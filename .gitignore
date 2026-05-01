@@ -50,3 +50,6 @@ pids
 # Output
 dist/
 build/
+
+# Archives
+*.zip
