@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>調車日誌</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body,
+        html {
+            height: 100%;
+            background-color: #121212;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #1a1a1a;
+            border-right: 1px solid #333;
+        }
+
+        .nav-link {
+            color: #aaa;
+            transition: all 0.2s;
+            border-radius: 8px;
+            margin-bottom: 5px;
+        }
+
+        .nav-link:hover {
+            background-color: #2a2a2a;
+            color: #fff;
+        }
+
+        .nav-link.active {
+            background-color: #ff3333;
+            color: white;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding-bottom: 70px;
+        }
+
+        @media (min-width: 768px) {
+            .main-content {
+                padding-bottom: 0;
+            }
+        }
+
+        .bottom-nav {
+            background-color: #1a1a1a;
+            border-top: 1px solid #333;
+            height: 70px;
+            z-index: 1030;
+        }
+
+        .bottom-nav-btn {
+            color: #aaa;
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 33%;
+            transition: color 0.2s;
+        }
+
+        .bottom-nav-btn.active {
+            color: #ff3333;
+        }
+
+        .card {
+            border: 1px solid #333;
+            background-color: #1e1e1e;
+        }
+
+        .mono-text {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            background: #ff3333;
+        }
+
+        /* ==========================================
+           進階視覺化車輛底盤 (使用絕對定位精準排版)
+           ========================================== */
+        .car-visualization-area {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .car-chassis-base {
+            width: 120px;
+            height: 280px;
+            background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+            border-radius: 40px 40px 20px 20px;
+            border: 2px dashed #444;
+            position: relative;
+            z-index: 2;
+        }
+
+        .cockpit {
+            width: 60px;
+            height: 80px;
+            background-color: #000;
+            border-radius: 20px 20px 10px 10px;
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 1px solid #333;
+        }
+
+        /* 互動式零件共用樣式 */
+        .interactive-part {
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #888;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .interactive-part:hover {
+            filter: brightness(1.5);
+        }
+
+        .interactive-part.active {
+            border-color: #ff3333 !important;
+            background-color: rgba(255, 51, 51, 0.2) !important;
+            color: #fff;
+            box-shadow: 0 0 12px rgba(255, 51, 51, 0.6);
+            z-index: 4;
+        }
+
+        /* 輪胎 (四輪獨立) */
+        .tire {
+            width: 30px;
+            height: 50px;
+            background-color: #222;
+            border: 2px solid #555;
+            border-radius: 6px;
+            flex-direction: column;
+        }
+
+        .tire-val {
+            font-size: 9px;
+            color: #ffaa00;
+            margin-top: 2px;
+        }
+
+        .tire-fl {
+            top: 40px;
+            left: -40px;
+        }
+
+        .tire-fr {
+            top: 40px;
+            right: -40px;
+        }
+
+        .tire-rl {
+            bottom: 40px;
+            left: -40px;
+        }
+
+        .tire-rr {
+            bottom: 40px;
+            right: -40px;
+        }
+
+        /* 空力套件 (前後翼) */
+        .part-val {
+            font-size: 10px;
+            color: #44aaff;
+            margin-left: 6px;
+        }
+
+        .aero-wing {
+            width: 140px;
+            height: 20px;
+            background-color: #222;
+            border: 2px solid #555;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 4px;
+        }
+
+        .wing-f {
+            top: -15px;
+            border-radius: 10px 10px 2px 2px;
+        }
+
+        .wing-r {
+            bottom: -15px;
+        }
+
+        /* 防傾桿 (ARB) */
+        .arb-bar {
+            width: 90px;
+            height: 12px;
+            background-color: #333;
+            border: 2px solid #555;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 6px;
+        }
+
+        .arb-f {
+            top: 60px;
+        }
+
+        .arb-r {
+            bottom: 60px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- 側邊欄 -->
+        <div class="sidebar d-none d-md-flex flex-column p-3">
+            <a href="#" class="d-flex align-items-center mb-4 text-white text-decoration-none">
+                <i class="fa-solid fa-flag-checkered text-danger fs-3 me-3"></i><span class="fs-5 fw-bold">調車日誌</span>
+            </a>
+            <hr class="border-secondary mt-0">
+            <ul class="nav nav-pills flex-column mb-auto" id="desktop-nav">
+                <li class="nav-item"><a href="#" class="nav-link" data-target="page-garage" data-title="車庫管理"><i
+                            class="fa-solid fa-warehouse me-2"></i>車庫管理</a></li>
+                <li class="nav-item"><a href="#" class="nav-link active" data-target="page-diagnostics"
+                        data-title="車輛診斷"><i class="fa-solid fa-screwdriver-wrench me-2"></i>車輛診斷</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" data-target="page-logs" data-title="調校日誌"><i
+                            class="fa-solid fa-book me-2"></i>調校日誌</a></li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <header
+                class="p-3 bg-dark border-bottom border-secondary sticky-top d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-white" id="page-title">車輛診斷</h5>
+            </header>
+
+            <div class="container-fluid p-4">
+
+                <!-- ====== 頁面 0：車庫管理 ====== -->
+                <div id="page-garage" class="page-section d-none">
+                    <div class="row justify-content-center g-4">
+                        <div class="col-12 col-lg-8">
+                            <div class="card">
+                                <div class="card-header bg-dark border-secondary">
+                                    <h6 class="mb-0"><i class="fa-solid fa-plus-circle me-2"></i>新增自訂車輛</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="add-car-form">
+                                        <div class="mb-4">
+                                            <label class="form-label text-secondary">車輛名稱</label>
+                                            <input type="text" class="form-control bg-dark text-white border-secondary"
+                                                id="car-name-input" required>
+                                        </div>
+                                        <label class="form-label text-secondary mb-2">車輛資訊：</label>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-4">
+                                                <input type="number" class="form-control bg-dark text-white border-secondary form-control-sm" id="car-weight-input" placeholder="車重 (kg)">
+                                            </div>
+                                            <div class="col-4">
+                                                <input type="number" class="form-control bg-dark text-white border-secondary form-control-sm" id="car-hp-input" placeholder="馬力 (HP)">
+                                            </div>
+                                            <div class="col-4">
+                                                <input type="number" class="form-control bg-dark text-white border-secondary form-control-sm" id="car-torque-input" placeholder="扭力 (Nm)">
+                                            </div>
+                                        </div>
+                                        <label class="form-label text-secondary mb-3">勾選開放參數：</label>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-6 col-md-4">
+                                                <div class="form-check form-switch"><input
+                                                        class="form-check-input param-checkbox" type="checkbox"
+                                                        value="arb_f" id="chk-arb-f" checked><label
+                                                        class="form-check-label" for="chk-arb-f">前防傾桿</label></div>
+                                            </div>
+                                            <div class="col-6 col-md-4">
+                                                <div class="form-check form-switch"><input
+                                                        class="form-check-input param-checkbox" type="checkbox"
+                                                        value="arb_r" id="chk-arb-r" checked><label
+                                                        class="form-check-label" for="chk-arb-r">後防傾桿</label></div>
+                                            </div>
+                                            <div class="col-6 col-md-4">
+                                                <div class="form-check form-switch"><input
+                                                        class="form-check-input param-checkbox" type="checkbox"
+                                                        value="aero_f" id="chk-aero-f" checked><label
+                                                        class="form-check-label" for="chk-aero-f">前翼下壓力</label></div>
+                                            </div>
+                                            <div class="col-6 col-md-4">
+                                                <div class="form-check form-switch"><input
+                                                        class="form-check-input param-checkbox" type="checkbox"
+                                                        value="aero_r" id="chk-aero-r" checked><label
+                                                        class="form-check-label" for="chk-aero-r">尾翼下壓力</label></div>
+                                            </div>
+                                            <div class="col-6 col-md-4">
+                                                <div class="form-check form-switch"><input
+                                                        class="form-check-input param-checkbox" type="checkbox"
+                                                        value="toe_f" id="chk-toe-f" checked><label
+                                                        class="form-check-label" for="chk-toe-f">前束角 (Toe)</label></div>
+                                            </div>
+                                            <div class="col-6 col-md-4">
+                                                <div class="form-check form-switch"><input
+                                                        class="form-check-input param-checkbox" type="checkbox"
+                                                        value="camber_f" id="chk-camber-f" checked><label
+                                                        class="form-check-label" for="chk-camber-f">前傾角</label></div>
+                                            </div>
+                                            <div class="col-6 col-md-4">
+                                                <div class="form-check form-switch"><input
+                                                        class="form-check-input param-checkbox" type="checkbox"
+                                                        value="pressure" id="chk-pressure" checked disabled><label
+                                                        class="form-check-label text-muted" for="chk-pressure">基礎胎壓
+                                                        (必備)</label></div>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-danger w-100"><i
+                                                class="fa-solid fa-save me-2"></i>新增車輛</button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- 車輛列表區塊 -->
+                            <div class="card mt-4">
+                                <div class="card-header bg-dark border-secondary">
+                                    <h6 class="mb-0"><i class="fa-solid fa-list me-2"></i>車庫車輛列表</h6>
+                                </div>
+                                <div class="card-body p-0" id="garage-car-list">
+                                    <!-- 動態生成車輛列表 -->
+                                </div>
+                            </div>
+
+                            <!-- JSON 匯出與匯入區塊 -->
+                            <div class="card mt-4">
+                                <div class="card-header bg-dark border-secondary">
+                                    <h6 class="mb-0"><i class="fa-solid fa-file-code me-2"></i>JSON 設定檔備份與還原</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-secondary small">將目前車庫的所有車輛及調校參數匯出為 JSON 檔，或從本機匯入設定檔。</p>
+                                    <div class="d-flex gap-3 flex-column flex-md-row">
+                                        <button id="btn-export-json" class="btn btn-outline-success w-100">
+                                            <i class="fa-solid fa-download me-2"></i>匯出設定 (Export)
+                                        </button>
+                                        <button id="btn-import-json" class="btn btn-outline-warning w-100">
+                                            <i class="fa-solid fa-upload me-2"></i>匯入設定 (Import)
+                                        </button>
+                                        <input type="file" id="file-input-json" accept=".json" class="d-none">
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== 頁面 1：車輛診斷 ====== -->
+                <div id="page-diagnostics" class="page-section">
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card p-3">
+                                <div class="row align-items-center">
+                                    <div class="col-12 col-md-3 mb-2 mb-md-0 text-secondary">
+                                        <i class="fa-solid fa-key me-2"></i>當前車輛
+                                    </div>
+                                    <div class="col-12 col-md-6 mb-2 mb-md-0">
+                                        <select class="form-select bg-dark text-white border-secondary w-100" id="current-car-select"></select>
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <button class="btn btn-outline-info w-100" data-bs-toggle="modal" data-bs-target="#aiAnalysisModal">
+                                            <i class="fa-solid fa-wand-magic-sparkles me-1"></i>AI 建議
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card p-3 bg-dark border-secondary">
+                                <div class="d-flex justify-content-around text-center text-white">
+                                    <div><small class="text-secondary d-block mb-1">車重</small><span id="diag-weight" class="fs-5 fw-bold mono-text text-info">--</span> kg</div>
+                                    <div class="border-start border-secondary"></div>
+                                    <div><small class="text-secondary d-block mb-1">最大馬力</small><span id="diag-hp" class="fs-5 fw-bold mono-text text-danger">--</span> HP</div>
+                                    <div class="border-start border-secondary"></div>
+                                    <div><small class="text-secondary d-block mb-1">最大扭力</small><span id="diag-torque" class="fs-5 fw-bold mono-text text-warning">--</span> Nm</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <!-- 左側：視覺化底盤 -->
+                        <div class="col-12 col-lg-5">
+                            <div class="card h-100">
+                                <div class="card-header bg-dark border-secondary">
+                                    <h6 class="mb-0">點擊部位進行調校</h6>
+                                </div>
+                                <div class="card-body car-visualization-area">
+
+                                    <div class="car-chassis-base">
+                                        <div class="cockpit"></div>
+
+                                        <!-- 動態顯示零件 (透過 data-group 群組化) -->
+                                        <!-- 空力套件 -->
+                                        <div id="vis-aero-f" class="interactive-part aero-wing wing-f d-none"
+                                            data-group="front-aero">FW<span class="part-val" id="vis-val-aero_f">--</span></div>
+                                        <div id="vis-aero-r" class="interactive-part aero-wing wing-r d-none"
+                                            data-group="rear-aero">RW<span class="part-val" id="vis-val-aero_r">--</span></div>
+
+                                        <!-- 懸吊系統 -->
+                                        <div id="vis-susp-f" class="interactive-part arb-bar arb-f d-none"
+                                            data-group="front-susp">SUSP</div>
+                                        <div id="vis-susp-r" class="interactive-part arb-bar arb-r d-none"
+                                            data-group="rear-susp">SUSP</div>
+
+                                        <!-- 輪胎 -->
+                                        <div class="interactive-part tire tire-fl" data-group="tire-fl">FL<span class="tire-val" id="vis-val-pressure_fl">--</span></div>
+                                        <div class="interactive-part tire tire-fr" data-group="tire-fr">FR<span class="tire-val" id="vis-val-pressure_fr">--</span></div>
+                                        <div class="interactive-part tire tire-rl" data-group="tire-rl">RL<span class="tire-val" id="vis-val-pressure_rl">--</span></div>
+                                        <div class="interactive-part tire tire-rr" data-group="tire-rr">RR<span class="tire-val" id="vis-val-pressure_rr">--</span></div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 右側：動態參數面板 -->
+                        <div class="col-12 col-lg-7">
+                            <div class="card h-100">
+                                <div class="card-header bg-dark border-secondary d-flex justify-content-between">
+                                    <h6 class="mb-0" id="panel-title"><i class="fa-solid fa-sliders me-2"></i>請選擇部位</h6>
+                                </div>
+                                <div class="card-body" id="dynamic-sliders-container">
+                                    <div
+                                        class="text-center text-secondary mt-5 h-100 d-flex flex-column justify-content-center">
+                                        <i class="fa-solid fa-hand-pointer fa-3x mb-3 opacity-50"></i>
+                                        <p>點擊左側車輛圖示的特定零件<br>此處將顯示對應的調校參數。</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-dark border-secondary text-end">
+                                    <button class="btn btn-danger w-100" id="btn-open-save-log"><i class="fa-solid fa-flag-checkered me-2"></i>儲存此調校為紀錄</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== 頁面 2：調校日誌 ====== -->
+                <div id="page-logs" class="page-section d-none">
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card p-3">
+                                <div class="row align-items-center">
+                                    <div class="col-12 col-md-4 mb-2 mb-md-0 text-secondary">
+                                        <i class="fa-solid fa-car me-2"></i>選擇查看車輛
+                                    </div>
+                                    <div class="col-12 col-md-8">
+                                        <select class="form-select bg-dark text-white border-secondary w-100" id="logs-car-select"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header bg-dark border-secondary">
+                                    <h6 class="mb-0"><i class="fa-solid fa-list-ul me-2"></i>歷史調校紀錄</h6>
+                                </div>
+                                <div class="card-body p-0" id="setup-logs-container">
+                                    <!-- 動態生成紀錄列表 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 手機端底部導覽列 -->
+        <div class="bottom-nav fixed-bottom d-md-none d-flex justify-content-around align-items-center" id="mobile-nav">
+            <button class="bottom-nav-btn" data-target="page-garage" data-title="車庫管理"><i
+                    class="fa-solid fa-warehouse fs-5 mb-1"></i><small>車庫</small></button>
+            <button class="bottom-nav-btn active" data-target="page-diagnostics" data-title="車輛診斷"><i
+                    class="fa-solid fa-screwdriver-wrench fs-5 mb-1"></i><small>診斷</small></button>
+            <button class="bottom-nav-btn" data-target="page-logs" data-title="調校日誌"><i
+                    class="fa-solid fa-book fs-5 mb-1"></i><small>日誌</small></button>
+        </div>
+    </div>
+
+    <!-- 儲存調校紀錄 Modal -->
+    <div class="modal fade" id="saveLogModal" tabindex="-1" data-bs-theme="dark">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="fa-solid fa-flag-checkered me-2"></i>儲存當前調校紀錄</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary">本圈成績 (Lap Time)</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="number" id="log-lap-min" class="form-control bg-dark text-white border-secondary text-center px-1" placeholder="分" min="0" max="59" style="width: 60px;">
+                            <span class="text-secondary">:</span>
+                            <input type="number" id="log-lap-sec" class="form-control bg-dark text-white border-secondary text-center px-1" placeholder="秒" min="0" max="59" style="width: 70px;">
+                            <span class="text-secondary">.</span>
+                            <input type="number" id="log-lap-ms" class="form-control bg-dark text-white border-secondary text-center px-1" placeholder="毫秒" min="0" max="999" style="width: 80px;">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary">試駕反饋 (Feedback Notes)</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" id="log-feedback" rows="4" placeholder="ex: 進彎轉向不足，出彎稍微滑動..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="btn-save-log-confirm">儲存紀錄</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI 調校建議 Modal (預留功能) -->
+    <div class="modal fade" id="aiAnalysisModal" tabindex="-1" data-bs-theme="dark">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-white border-info">
+                <div class="modal-header border-info">
+                    <h5 class="modal-title text-info"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>AI 調校助手 (開發中)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="text-center mb-4">
+                        <i class="fa-solid fa-robot fa-4x text-info mb-3 opacity-75"></i>
+                        <h5>等待連線至 AI 分析引擎...</h5>
+                        <p class="text-secondary small">此功能未來將會讀取本車輛的「歷史調校日誌」與「試駕反饋」，<br>並由 AI 自動分析給予您專屬的調校建議方向。</p>
+                    </div>
+                    <div class="bg-black p-3 rounded border border-secondary text-start">
+                        <h6 class="text-secondary mb-2">預計支援分析項目：</h6>
+                        <ul class="text-secondary small mb-0">
+                            <li>過彎轉向不足 / 過度之參數抓漏</li>
+                            <li>多筆成績的參數關聯性比對</li>
+                            <li>根據反饋建議調整的前後防傾桿或胎壓數值</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer border-info">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                    <button type="button" class="btn btn-info" disabled>開始分析 (敬請期待)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 編輯車輛 Modal -->
+    <div class="modal fade" id="editCarModal" tabindex="-1" data-bs-theme="dark">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="fa-solid fa-pen-to-square me-2"></i>編輯車輛選項</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-car-form">
+                        <input type="hidden" id="edit-car-id">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary">車輛名稱</label>
+                            <input type="text" class="form-control bg-dark text-white border-secondary" id="edit-car-name" required>
+                        </div>
+                        <label class="form-label text-secondary mb-2">車輛資訊：</label>
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <label class="form-label text-secondary small mb-1">車重(kg)</label>
+                                <input type="number" class="form-control bg-dark text-white border-secondary form-control-sm" id="edit-car-weight">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label text-secondary small mb-1">馬力(HP)</label>
+                                <input type="number" class="form-control bg-dark text-white border-secondary form-control-sm" id="edit-car-hp">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label text-secondary small mb-1">扭力(Nm)</label>
+                                <input type="number" class="form-control bg-dark text-white border-secondary form-control-sm" id="edit-car-torque">
+                            </div>
+                        </div>
+                        <label class="form-label text-secondary mb-2">勾選開放參數：</label>
+                        <div class="row g-2">
+                            <div class="col-12 col-sm-6"><div class="form-check form-switch"><input class="form-check-input edit-param-cb" type="checkbox" value="arb_f" id="edit-arb-f"><label class="form-check-label" for="edit-arb-f">前防傾桿</label></div></div>
+                            <div class="col-12 col-sm-6"><div class="form-check form-switch"><input class="form-check-input edit-param-cb" type="checkbox" value="arb_r" id="edit-arb-r"><label class="form-check-label" for="edit-arb-r">後防傾桿</label></div></div>
+                            <div class="col-12 col-sm-6"><div class="form-check form-switch"><input class="form-check-input edit-param-cb" type="checkbox" value="aero_f" id="edit-aero-f"><label class="form-check-label" for="edit-aero-f">前翼下壓力</label></div></div>
+                            <div class="col-12 col-sm-6"><div class="form-check form-switch"><input class="form-check-input edit-param-cb" type="checkbox" value="aero_r" id="edit-aero-r"><label class="form-check-label" for="edit-aero-r">尾翼下壓力</label></div></div>
+                            <div class="col-12 col-sm-6"><div class="form-check form-switch"><input class="form-check-input edit-param-cb" type="checkbox" value="toe_f" id="edit-toe-f"><label class="form-check-label" for="edit-toe-f">前束角 (Toe)</label></div></div>
+                            <div class="col-12 col-sm-6"><div class="form-check form-switch"><input class="form-check-input edit-param-cb" type="checkbox" value="camber_f" id="edit-camber-f"><label class="form-check-label" for="edit-camber-f">前傾角</label></div></div>
+                            <div class="col-12 col-sm-6"><div class="form-check form-switch"><input class="form-check-input edit-param-cb" type="checkbox" value="pressure" checked disabled><label class="form-check-label text-muted">基礎胎壓 (必備)</label></div></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="btn-save-edit">儲存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // 1. 參數字典
+            const paramConfig = {
+                'arb_f': { name: '前防傾桿', min: 1, max: 10, step: 1, default: 5, unit: '格', isFloat: false },
+                'arb_r': { name: '後防傾桿', min: 1, max: 10, step: 1, default: 5, unit: '格', isFloat: false },
+                'aero_f': { name: '前翼下壓力', min: 0, max: 11, step: 1, default: 3, unit: '格', isFloat: false },
+                'aero_r': { name: '尾翼下壓力', min: 0, max: 11, step: 1, default: 5, unit: '格', isFloat: false },
+                'toe_f': { name: '前束角 (Toe)', min: -0.5, max: 0.5, step: 0.05, default: -0.1, unit: '度', isFloat: true },
+                'camber_f': { name: '前傾角 (Camber)', min: -4.0, max: 0, step: 0.1, default: -2.5, unit: '度', isFloat: true },
+                'pressure_fl': { name: '左前胎壓', min: 15.0, max: 35.0, step: 0.5, default: 25.0, unit: 'psi', isFloat: true },
+                'pressure_fr': { name: '右前胎壓', min: 15.0, max: 35.0, step: 0.5, default: 25.0, unit: 'psi', isFloat: true },
+                'pressure_rl': { name: '左後胎壓', min: 15.0, max: 35.0, step: 0.5, default: 25.0, unit: 'psi', isFloat: true },
+                'pressure_rr': { name: '右後胎壓', min: 15.0, max: 35.0, step: 0.5, default: 25.0, unit: 'psi', isFloat: true }
+            };
+
+            // 2. 狀態映射表 (State Mapping)：定義點擊哪個部位，要顯示哪些參數
+            const partToParamsMap = {
+                'tire-fl': { title: '左前輪胎壓 (FL Tire)', params: ['pressure_fl'] },
+                'tire-fr': { title: '右前輪胎壓 (FR Tire)', params: ['pressure_fr'] },
+                'tire-rl': { title: '左後輪胎壓 (RL Tire)', params: ['pressure_rl'] },
+                'tire-rr': { title: '右後輪胎壓 (RR Tire)', params: ['pressure_rr'] },
+                'front-aero': { title: '前空力套件 (Front Aero)', params: ['aero_f'] },
+                'rear-aero': { title: '後空力套件 (Rear Aero)', params: ['aero_r'] },
+                'front-susp': { title: '前懸吊系統 (Front Susp)', params: ['arb_f', 'camber_f', 'toe_f'] },
+                'rear-susp': { title: '後懸吊系統 (Rear Susp)', params: ['arb_r'] }
+            };
+
+            // 預設車輛資料
+            let myGarage = [
+                {
+                    id: 'car_gt3_01',
+                    name: 'Porsche 911 GT3 R (支援完整空力)',
+                    info: { weight: 1250, hp: 550, torque: 500 },
+                    allowedParams: ['arb_f', 'arb_r', 'aero_f', 'aero_r', 'toe_f', 'camber_f', 'pressure_fl', 'pressure_fr', 'pressure_rl', 'pressure_rr'],
+                    setupValues: {},
+                    logs: []
+                },
+                {
+                    id: 'car_kart_01',
+                    name: '四行程卡丁車 (無空力/無後防傾)',
+                    info: { weight: 150, hp: 15, torque: 20 },
+                    allowedParams: ['arb_f', 'toe_f', 'camber_f', 'pressure_fl', 'pressure_fr', 'pressure_rl', 'pressure_rr'],
+                    setupValues: {},
+                    logs: []
+                }
+            ];
+
+            const carSelectBox = document.getElementById('current-car-select');
+            const slidersContainer = document.getElementById('dynamic-sliders-container');
+            const panelTitle = document.getElementById('panel-title');
+
+            let currentCarId = null;
+            let currentActiveGroup = null;
+
+            const garageListContainer = document.getElementById('garage-car-list');
+            const logsCarSelect = document.getElementById('logs-car-select');
+            const setupLogsContainer = document.getElementById('setup-logs-container');
+            let saveLogModalInstance = null;
+
+            // 渲染車庫列表
+            function renderGarageList() {
+                if(!garageListContainer) return;
+                garageListContainer.innerHTML = '';
+                if(myGarage.length === 0) {
+                    garageListContainer.innerHTML = '<div class="p-4 text-secondary text-center">車庫內目前沒有車輛</div>';
+                    return;
+                }
+
+                myGarage.forEach(car => {
+                    const carDiv = document.createElement('div');
+                    carDiv.className = 'p-3 border-bottom border-secondary d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3';
+                    
+                    const paramCount = car.allowedParams.length;
+                    
+                    const infoDiv = document.createElement('div');
+                    infoDiv.innerHTML = `<h6 class="mb-1 text-white">${car.name}</h6>
+                        <small class="text-secondary">${paramCount} 項可調參數</small>`;
+                    
+                    const actionDiv = document.createElement('div');
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'btn btn-sm btn-outline-info me-2';
+                    editBtn.innerHTML = '<i class="fa-solid fa-pen"></i> 編輯';
+                    editBtn.onclick = () => editCarOptions(car.id);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'btn btn-sm btn-outline-danger';
+                    deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i> 刪除';
+                    deleteBtn.onclick = () => deleteCar(car.id);
+
+                    actionDiv.appendChild(editBtn);
+                    actionDiv.appendChild(deleteBtn);
+                    
+                    carDiv.appendChild(infoDiv);
+                    carDiv.appendChild(actionDiv);
+                    garageListContainer.appendChild(carDiv);
+                });
+            }
+
+            // 刪除車輛
+            function deleteCar(carId) {
+                if(confirm('確定要刪除這台車輛嗎？')) {
+                    myGarage = myGarage.filter(c => c.id !== carId);
+                    initGarage();
+                }
+            }
+
+            // 初始化下拉選單與列表
+            function initGarage() {
+                carSelectBox.innerHTML = '';
+                logsCarSelect.innerHTML = '';
+                if(myGarage.length === 0) {
+                    carSelectBox.innerHTML = '<option value="">請先至車庫新增車輛</option>';
+                    logsCarSelect.innerHTML = '<option value="">無車輛</option>';
+                    currentCarId = null;
+                    resetPanel();
+                    document.querySelector('.car-visualization-area').classList.add('opacity-50', 'pointer-events-none');
+                } else {
+                    document.querySelector('.car-visualization-area').classList.remove('opacity-50', 'pointer-events-none');
+                    myGarage.forEach(car => {
+                        const opt = document.createElement('option');
+                        opt.value = car.id;
+                        opt.textContent = car.name;
+                        carSelectBox.appendChild(opt);
+
+                        const logOpt = document.createElement('option');
+                        logOpt.value = car.id;
+                        logOpt.textContent = car.name;
+                        logsCarSelect.appendChild(logOpt);
+                        
+                        if(!car.logs) car.logs = []; // 確保有 logs 陣列
+                    });
+                    
+                    if(!myGarage.find(c => c.id === currentCarId)) {
+                        currentCarId = myGarage[0].id;
+                    }
+                    carSelectBox.value = currentCarId;
+                    logsCarSelect.value = currentCarId;
+                    loadCar(currentCarId);
+                }
+                renderGarageList();
+                renderLogsList();
+            }
+
+            // 編輯車輛邏輯
+            let editModalInstance = null;
+            function editCarOptions(carId) {
+                const car = myGarage.find(c => c.id === carId);
+                if(!car) return;
+
+                document.getElementById('edit-car-id').value = car.id;
+                document.getElementById('edit-car-name').value = car.name;
+                document.getElementById('edit-car-weight').value = car.info?.weight || '';
+                document.getElementById('edit-car-hp').value = car.info?.hp || '';
+                document.getElementById('edit-car-torque').value = car.info?.torque || '';
+
+                document.querySelectorAll('.edit-param-cb').forEach(cb => {
+                    if (cb.value !== 'pressure') {
+                        cb.checked = car.allowedParams.includes(cb.value);
+                    }
+                });
+
+                if(!editModalInstance) {
+                    editModalInstance = new bootstrap.Modal(document.getElementById('editCarModal'));
+                }
+                editModalInstance.show();
+            }
+
+            document.getElementById('btn-save-edit').addEventListener('click', () => {
+                const carId = document.getElementById('edit-car-id').value;
+                const car = myGarage.find(c => c.id === carId);
+                if(!car) return;
+
+                const newName = document.getElementById('edit-car-name').value.trim();
+                if(newName) car.name = newName;
+                
+                if(!car.info) car.info = {};
+                car.info.weight = document.getElementById('edit-car-weight').value || 0;
+                car.info.hp = document.getElementById('edit-car-hp').value || 0;
+                car.info.torque = document.getElementById('edit-car-torque').value || 0;
+                
+                let selectedParams = [];
+                document.querySelectorAll('.edit-param-cb:checked').forEach(cb => {
+                    if (cb.value === 'pressure') {
+                        selectedParams.push('pressure_fl', 'pressure_fr', 'pressure_rl', 'pressure_rr');
+                    } else {
+                        selectedParams.push(cb.value);
+                    }
+                });
+                
+                selectedParams.forEach(param => {
+                    if(car.setupValues[param] === undefined) {
+                        car.setupValues[param] = paramConfig[param].default;
+                    }
+                });
+
+                car.allowedParams = selectedParams;
+                
+                editModalInstance.hide();
+                initGarage();
+                if(currentCarId === car.id) {
+                    loadCar(car.id);
+                }
+            });
+
+            // 載入車輛圖示 (條件渲染)
+            function loadCar(carId) {
+                currentCarId = carId;
+                const car = myGarage.find(c => c.id === carId);
+                if (!car) return;
+
+                // 若該車沒有 setupValues 物件，初始化它
+                if (!car.setupValues) car.setupValues = {};
+                car.allowedParams.forEach(paramKey => {
+                    if (car.setupValues[paramKey] === undefined) {
+                        car.setupValues[paramKey] = paramConfig[paramKey].default;
+                    }
+                });
+
+                // 重置右側面板與所有選取狀態
+                resetPanel();
+                document.querySelectorAll('.interactive-part').forEach(p => p.classList.remove('active'));
+
+                // 根據車輛允許的參數，動態顯示/隱藏底盤上的圖示
+                toggleVis('vis-aero-f', car.allowedParams.includes('aero_f'));
+                toggleVis('vis-aero-r', car.allowedParams.includes('aero_r'));
+                toggleVis('vis-susp-f', car.allowedParams.some(p => ['arb_f', 'camber_f', 'toe_f'].includes(p)));
+                toggleVis('vis-susp-r', car.allowedParams.includes('arb_r'));
+                // 更新車輛資訊顯示
+                document.getElementById('diag-weight').textContent = car.info?.weight || '--';
+                document.getElementById('diag-hp').textContent = car.info?.hp || '--';
+                document.getElementById('diag-torque').textContent = car.info?.torque || '--';
+
+                // 輪胎永遠顯示，並且更新數值
+                ['fl', 'fr', 'rl', 'rr'].forEach(pos => {
+                    const valSpan = document.getElementById(`vis-val-pressure_${pos}`);
+                    if(valSpan) {
+                        const val = car.setupValues[`pressure_${pos}`];
+                        valSpan.textContent = val !== undefined ? parseFloat(val).toFixed(1) : '--';
+                    }
+                });
+
+                // 更新空力套件數值
+                ['f', 'r'].forEach(pos => {
+                    const valSpan = document.getElementById(`vis-val-aero_${pos}`);
+                    if(valSpan) {
+                        const val = car.setupValues[`aero_${pos}`];
+                        valSpan.textContent = val !== undefined ? parseFloat(val).toFixed(0) : '--';
+                    }
+                });
+            }
+
+            function toggleVis(elementId, shouldShow) {
+                const el = document.getElementById(elementId);
+                if (el) {
+                    if (shouldShow) el.classList.remove('d-none');
+                    else el.classList.add('d-none');
+                }
+            }
+
+            // 重置右側面板
+            function resetPanel() {
+                currentActiveGroup = null;
+                panelTitle.innerHTML = `<i class="fa-solid fa-sliders me-2"></i>請選擇部位`;
+                slidersContainer.innerHTML = `
+                    <div class="text-center text-secondary mt-5 h-100 d-flex flex-column justify-content-center">
+                        <i class="fa-solid fa-hand-pointer fa-3x mb-3 opacity-50"></i>
+                        <p>點擊左側車輛圖示的特定零件<br>此處將顯示對應的調校參數。</p>
+                    </div>`;
+            }
+
+            // ==========================================
+            // 調校日誌 (Setup Logs) 邏輯
+            // ==========================================
+            
+            document.getElementById('btn-open-save-log').addEventListener('click', () => {
+                if(!currentCarId) return alert('請先選擇車輛');
+                if(!saveLogModalInstance) {
+                    saveLogModalInstance = new bootstrap.Modal(document.getElementById('saveLogModal'));
+                }
+                document.getElementById('log-lap-min').value = '';
+                document.getElementById('log-lap-sec').value = '';
+                document.getElementById('log-lap-ms').value = '';
+                document.getElementById('log-feedback').value = '';
+                saveLogModalInstance.show();
+            });
+
+            document.getElementById('btn-save-log-confirm').addEventListener('click', () => {
+                const car = myGarage.find(c => c.id === currentCarId);
+                if(!car) return;
+
+                const min = document.getElementById('log-lap-min').value.trim();
+                const sec = document.getElementById('log-lap-sec').value.trim();
+                const ms = document.getElementById('log-lap-ms').value.trim();
+                let lapTime = '';
+                if(min || sec || ms) {
+                    lapTime = `${min || '0'}:${(sec || '0').padStart(2, '0')}.${(ms || '0').padStart(3, '0')}`;
+                }
+                const feedback = document.getElementById('log-feedback').value.trim();
+                
+                const logEntry = {
+                    id: 'log_' + Date.now(),
+                    date: new Date().toLocaleString(),
+                    lapTime: lapTime || '未記錄',
+                    feedback: feedback || '無筆記',
+                    setupValues: JSON.parse(JSON.stringify(car.setupValues)) // Deep copy
+                };
+
+                if(!car.logs) car.logs = [];
+                car.logs.push(logEntry);
+                
+                saveLogModalInstance.hide();
+                alert('調校紀錄已儲存！你可以至「調校日誌」頁面查看。');
+                renderLogsList();
+            });
+
+            logsCarSelect.addEventListener('change', (e) => {
+                const carId = e.target.value;
+                if(carId && carId !== currentCarId) {
+                    carSelectBox.value = carId;
+                    loadCar(carId);
+                }
+                renderLogsList();
+            });
+
+            function renderLogsList() {
+                if(!setupLogsContainer) return;
+                setupLogsContainer.innerHTML = '';
+                const selectedCarId = logsCarSelect.value;
+                const car = myGarage.find(c => c.id === selectedCarId);
+                
+                if(!car || !car.logs || car.logs.length === 0) {
+                    setupLogsContainer.innerHTML = '<div class="p-4 text-secondary text-center">該車輛目前無調校紀錄</div>';
+                    return;
+                }
+
+                // 倒序顯示，最新的在最上面
+                const sortedLogs = [...car.logs].reverse();
+
+                sortedLogs.forEach(log => {
+                    const logDiv = document.createElement('div');
+                    logDiv.className = 'p-3 border-bottom border-secondary d-flex flex-column gap-2';
+                    
+                    // 將設定值格式化為字串
+                    let detailsHtml = '<div class="row g-2">';
+                    for (const [key, val] of Object.entries(log.setupValues)) {
+                        const cfg = paramConfig[key];
+                        if (cfg) {
+                            const dispVal = cfg.isFloat ? parseFloat(val).toFixed(2) : val;
+                            detailsHtml += `<div class="col-6 col-sm-4 col-md-3"><span class="text-secondary">${cfg.name}:</span> <span class="text-white">${dispVal}</span></div>`;
+                        }
+                    }
+                    detailsHtml += '</div>';
+
+                    logDiv.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-white"><i class="fa-regular fa-clock me-1"></i>${log.date}</span>
+                            <span class="badge bg-danger fs-6 mono-text">${log.lapTime}</span>
+                        </div>
+                        <div class="text-secondary small bg-black p-2 rounded border border-secondary mb-2" style="white-space: pre-wrap;">${log.feedback}</div>
+                        
+                        <!-- 詳細設定切換區塊 -->
+                        <div class="mb-2">
+                            <button class="btn btn-sm btn-outline-secondary w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${log.id}" aria-expanded="false" aria-controls="collapse-${log.id}">
+                                <i class="fa-solid fa-caret-down me-2"></i>查看詳細調校參數
+                            </button>
+                            <div class="collapse mt-2" id="collapse-${log.id}">
+                                <div class="card card-body bg-dark border-secondary p-2 small">
+                                    ${detailsHtml}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button class="btn btn-sm btn-outline-danger btn-delete-log" data-logid="${log.id}"><i class="fa-solid fa-trash me-1"></i>刪除</button>
+                            <button class="btn btn-sm btn-outline-warning btn-apply-log" data-logid="${log.id}"><i class="fa-solid fa-download me-1"></i>套用此設定</button>
+                        </div>
+                    `;
+                    setupLogsContainer.appendChild(logDiv);
+                });
+
+                // 綁定事件
+                document.querySelectorAll('.btn-apply-log').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const logId = e.target.closest('button').dataset.logid;
+                        applyLog(selectedCarId, logId);
+                    });
+                });
+
+                document.querySelectorAll('.btn-delete-log').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const logId = e.target.closest('button').dataset.logid;
+                        if(confirm('確定要刪除這筆紀錄嗎？')) {
+                            car.logs = car.logs.filter(l => l.id !== logId);
+                            renderLogsList();
+                        }
+                    });
+                });
+            }
+
+            window.applyLog = function(carId, logId) {
+                const car = myGarage.find(c => c.id === carId);
+                if(!car || !car.logs) return;
+                const log = car.logs.find(l => l.id === logId);
+                if(!log) return;
+
+                if(confirm('確定要套用這組設定嗎？你當前未儲存的調校將會被覆蓋。')) {
+                    car.setupValues = JSON.parse(JSON.stringify(log.setupValues));
+                    loadCar(carId);
+                    switchPage('page-diagnostics', '車輛診斷');
+                    alert('已成功套用設定！');
+                }
+            }
+
+            // 處理零件點擊事件
+            document.querySelectorAll('.interactive-part').forEach(partEl => {
+                partEl.addEventListener('click', (e) => {
+                    if (!currentCarId) return;
+                    const group = partEl.getAttribute('data-group');
+
+                    // 1. 處理視覺上的 Active 狀態
+                    document.querySelectorAll('.interactive-part').forEach(p => p.classList.remove('active'));
+                    // 把同一個 group 的零件都 highlight 起來
+                    document.querySelectorAll(`.interactive-part[data-group="${group}"]`).forEach(p => p.classList.add('active'));
+
+                    // 2. 渲染對應的滑桿
+                    renderSlidersForGroup(group);
+                });
+            });
+
+            // 核心：算出「該群組的參數」與「該車輛允許的參數」的交集，並渲染滑桿
+            function renderSlidersForGroup(group) {
+                currentActiveGroup = group;
+                const car = myGarage.find(c => c.id === currentCarId);
+                if (!car) return;
+
+                const mappingInfo = partToParamsMap[group];
+
+                panelTitle.innerHTML = `<i class="fa-solid fa-wrench me-2"></i>${mappingInfo.title}`;
+                slidersContainer.innerHTML = '';
+
+                // 取得交集
+                const paramsToRender = mappingInfo.params.filter(p => car.allowedParams.includes(p));
+
+                if (paramsToRender.length === 0) {
+                    slidersContainer.innerHTML = '<p class="text-center text-secondary mt-4">此車輛不支援此部位的參數調校。</p>';
+                    return;
+                }
+
+                // 渲染滑桿
+                paramsToRender.forEach(paramKey => {
+                    const config = paramConfig[paramKey];
+                    const currentValue = car.setupValues[paramKey] !== undefined ? car.setupValues[paramKey] : config.default;
+                    const displayValue = config.isFloat ? parseFloat(currentValue).toFixed(2) : currentValue;
+
+                    const div = document.createElement('div');
+                    div.className = 'mb-4';
+                    div.innerHTML = `
+                        <div class="d-flex justify-content-between mb-1">
+                            <label class="form-label mb-0 small text-secondary">${config.name}</label>
+                            <div><span class="badge bg-danger mono-text fs-6" id="val-${paramKey}">${displayValue}</span>
+                            <span class="text-secondary small ms-1">${config.unit}</span></div>
+                        </div>
+                        <input type="range" class="form-range custom-slider" id="slider-${paramKey}" min="${config.min}" max="${config.max}" step="${config.step}" value="${currentValue}">
+                    `;
+                    slidersContainer.appendChild(div);
+
+                    // 綁定事件：滑動時更新 UI 與車輛資料
+                    const slider = document.getElementById(`slider-${paramKey}`);
+                    const valDisplay = document.getElementById(`val-${paramKey}`);
+                    slider.addEventListener('input', (e) => {
+                        let val = parseFloat(e.target.value);
+                        valDisplay.textContent = config.isFloat ? val.toFixed(2) : val;
+                        car.setupValues[paramKey] = val; // 存檔
+                        
+                        // 若為胎壓，同步更新底盤圖示上的數值
+                        if(paramKey.startsWith('pressure_')) {
+                            const valSpan = document.getElementById(`vis-val-${paramKey}`);
+                            if(valSpan) valSpan.textContent = val.toFixed(1);
+                        }
+
+                        // 若為空力套件，同步更新底盤圖示上的數值
+                        if(paramKey.startsWith('aero_')) {
+                            const valSpan = document.getElementById(`vis-val-${paramKey}`);
+                            if(valSpan) valSpan.textContent = val.toFixed(0);
+                        }
+                    });
+                });
+            }
+
+            // 事件監聽
+            carSelectBox.addEventListener('change', (e) => loadCar(e.target.value));
+
+            document.getElementById('add-car-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                let selectedParams = [];
+                document.querySelectorAll('.param-checkbox:checked').forEach(cb => {
+                    if (cb.value === 'pressure') {
+                        selectedParams.push('pressure_fl', 'pressure_fr', 'pressure_rl', 'pressure_rr');
+                    } else {
+                        selectedParams.push(cb.value);
+                    }
+                });
+
+                const initialSetup = {};
+                selectedParams.forEach(param => { initialSetup[param] = paramConfig[param].default; });
+
+                const newCar = {
+                    id: 'car_' + Date.now(),
+                    name: document.getElementById('car-name-input').value,
+                    info: {
+                        weight: document.getElementById('car-weight-input').value || 0,
+                        hp: document.getElementById('car-hp-input').value || 0,
+                        torque: document.getElementById('car-torque-input').value || 0
+                    },
+                    allowedParams: selectedParams,
+                    setupValues: initialSetup
+                };
+
+                myGarage.push(newCar);
+                initGarage();
+                carSelectBox.value = newCar.id;
+                loadCar(newCar.id);
+
+                // 切換回診斷頁面
+                switchPage('page-diagnostics', '車輛診斷');
+                e.target.reset();
+                // 把checkbox再勾回來作為預設
+                document.querySelectorAll('.param-checkbox').forEach(cb => cb.checked = true);
+            });
+
+            // ==========================================
+            // JSON 匯出與匯入核心邏輯
+            // ==========================================
+            const btnExport = document.getElementById('btn-export-json');
+            const btnImport = document.getElementById('btn-import-json');
+            const fileInput = document.getElementById('file-input-json');
+
+            btnExport.addEventListener('click', () => {
+                if (myGarage.length === 0) return alert("車庫是空的，無資料可匯出！");
+                const jsonString = JSON.stringify(myGarage, null, 2);
+                const blob = new Blob([jsonString], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Garage_Setup_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            btnImport.addEventListener('click', () => { fileInput.click(); });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+                        if (Array.isArray(importedData)) {
+                            myGarage = importedData;
+                            initGarage();
+                            alert(`成功匯入 ${importedData.length} 台車輛的設定檔！`);
+                        } else {
+                            throw new Error("JSON 格式不符");
+                        }
+                    } catch (error) {
+                        alert("匯入失敗：檔案格式錯誤或損毀。");
+                    }
+                    fileInput.value = "";
+                };
+                reader.readAsText(file);
+            });
+
+            // 頁面切換
+            function switchPage(targetId, titleText) {
+                document.querySelectorAll('.page-section').forEach(page => page.classList.add('d-none'));
+                document.getElementById(targetId).classList.remove('d-none');
+                document.getElementById('page-title').textContent = titleText;
+
+                document.querySelectorAll('.nav-link, .bottom-nav-btn').forEach(el => {
+                    el.classList.remove('active');
+                    if (el.getAttribute('data-target') === targetId) el.classList.add('active');
+                });
+            }
+
+            document.querySelectorAll('.nav-link, .bottom-nav-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchPage(btn.getAttribute('data-target'), btn.getAttribute('data-title') || btn.textContent.trim());
+                });
+            });
+
+            // 啟動系統
+            initGarage();
+        });
+    </script>
+</body>
+
+</html>
