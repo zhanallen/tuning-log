@@ -33,40 +33,7 @@
 
 ## 🗺️ 系統流程 (System Flow)
 
-```plantuml
-@startuml
-skinparam theme plain
-title 調車日誌 - 系統流程圖
-start
-:使用者開啟網頁;
-if (車庫內有車輛資料?) then (無資料)
-  :進入 [車庫管理] 頁面;
-  :填寫車輛資訊與勾選開放參數;
-  :點擊新增車輛;
-else (有資料)
-  :預設進入 [車輛診斷] 頁面;
-endif
-switch (選擇功能頁面)
-case (車庫管理)
-  :檢視車輛列表;
-  split
-    :新增自訂車輛;
-  split again
-    :編輯/刪除現有車輛;
-  split again
-    :匯出/匯入 JSON 設定檔;
-  end split
-case (車輛診斷)
-  :選擇當前車輛;
-  :調整視覺化參數;
-  :儲存紀錄與反饋;
-case (調校日誌)
-  :檢視歷史紀錄;
-  :查看細節或套用設定;
-endswitch
-stop
-@enduml
-```
+![系統流程圖](系統流程圖.png)
 
 ## 📊 競品優勢 (Competitive Advantage)
 
