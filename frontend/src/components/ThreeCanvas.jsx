@@ -256,23 +256,45 @@ function CameraController({ activePartKey }) {
   return null;
 }
 
+// Matches drei's distanceFactor behaviour so all hotspots keep a consistent size.
+const HOTSPOT_DISTANCE_FACTOR = 5.5;
+
 // Interactive Hotspot Element with hover-boosting zIndex and layering support
 function HotspotElement({ spot, isSelected, currentVal, config, isAero, setActivePartKey }) {
   const [hovered, setHovered] = useState(false);
+  const { camera } = useThree();
+  const scaleRef = useRef(null);
+  const spotVec = useRef(new THREE.Vector3());
 
   // Boost z-index on hover (70-80) and selection (90-100) to keep labels on top of other hotspots
   const zIndexRange = isSelected
     ? [100, 90]
     : (hovered ? [80, 70] : [30, 0]);
 
+  // Apply the perspective scale OURSELVES every frame instead of relying on
+  // drei <Html distanceFactor>. drei only recomputes that scale when the
+  // element's 2D screen position changes; the selected hotspot is aimed at by
+  // the camera (screen-centred), so a dolly zoom keeps its screen position
+  // fixed and drei would freeze its scale at the click-moment value. Computing
+  // the scale directly from camera distance updates unconditionally.
+  useFrame(() => {
+    if (!scaleRef.current) return;
+    spotVec.current.set(spot.pos[0], spot.pos[1], spot.pos[2]);
+    const dist = camera.position.distanceTo(spotVec.current);
+    const vFOV = (camera.fov * Math.PI) / 180;
+    const scaleFOV = 2 * Math.tan(vFOV / 2) * dist;
+    const scale = (1 / scaleFOV) * HOTSPOT_DISTANCE_FACTOR;
+    scaleRef.current.style.transform = `scale(${scale})`;
+  });
+
   return (
     <Html
       position={spot.pos}
-      distanceFactor={5.5}
       center
       zIndexRange={zIndexRange}
     >
-      <div 
+      <div ref={scaleRef} style={{ transformOrigin: 'center center' }}>
+      <div
         className="relative flex items-center justify-center select-none group"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -300,6 +322,7 @@ function HotspotElement({ spot, isSelected, currentVal, config, isAero, setActiv
         >
           <div className="w-1 h-1 bg-background rounded-full"></div>
         </button>
+      </div>
       </div>
     </Html>
   );
