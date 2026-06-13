@@ -58,33 +58,17 @@ async function main() {
         'aero_f', 'aero_r',
         'susp_h_f', 'susp_h_r', 'susp_d_f', 'susp_d_r'
       ]
-    },
-    {
-      name: 'Formula SAE Racecar',
-      weightKg: 210,
-      horsepowerHp: 85,
-      torqueNm: 65,
-      modelPath: '/modle/2017_porsche_911_991_gt3_rs.glb',
-      modelScale: 1.0,
-      lengthM: 2.8,
-      allowedParams: [
-        'pressure_fl', 'pressure_fr', 'pressure_rl', 'pressure_rr',
-        'susp_h_f', 'susp_h_r', 'susp_d_f', 'susp_d_r'
-      ]
-    },
-    {
-      name: 'Electric Rental Kart',
-      weightKg: 95,
-      horsepowerHp: 15,
-      torqueNm: 22,
-      modelPath: '/modle/2017_porsche_911_991_gt3_rs.glb',
-      modelScale: 1.0,
-      lengthM: 1.9,
-      allowedParams: [
-        'pressure_fl', 'pressure_fr', 'pressure_rl', 'pressure_rr'
-      ]
     }
   ];
+
+  // Proactively purge 'Formula SAE Racecar' and 'Electric Rental Kart' from database (cascade deletes their logs/values)
+  await prisma.vehicle.deleteMany({
+    where: {
+      name: {
+        in: ['Formula SAE Racecar', 'Electric Rental Kart']
+      }
+    }
+  });
 
   for (const v of presetVehicles) {
     // Check if vehicle already exists
