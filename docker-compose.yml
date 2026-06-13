@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:15-alpine
+    container_name: tuning-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres1234}
+      POSTGRES_DB: ${DB_NAME:-tuning_log}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Do not expose ports to outer host (REQ-NFR-005)
+    expose:
+      - "5432"
+    networks:
+      - tuning-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: tuning-api
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres1234}@database:5432/${DB_NAME:-tuning_log}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-super-secret-tuning-key-9999}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-google-client-id-placeholder}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-developer@tuninglog.local,allen940403allen@gmail.com}
+      NODE_ENV: production
+      PORT: 5000
+    expose:
+      - "5000"
+    volumes:
+      # Persist admin-uploaded GLB models across container rebuilds
+      - uploads_data:/app/uploads
+    networks:
+      - tuning-network
+    depends_on:
+      database:
+        condition: service_healthy
+    # Wait for DB, run migrations, seed data, and start server
+    command: sh -c "npx prisma db push && npm run prisma:seed && npm run start"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Same GOOGLE_CLIENT_ID drives both the frontend (build) and backend (runtime)
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-your-google-oauth-client-id.apps.googleusercontent.com}
+    container_name: tuning-web
+    expose:
+      - "80"
+    networks:
+      - tuning-network
+    depends_on:
+      - backend
+    restart: always
+
+  nginx:
+    build: ./nginx
+    container_name: tuning-gateway
+    ports:
+      - "8080:80"
+      - "8443:443"
+    networks:
+      - tuning-network
+    depends_on:
+      - frontend
+      - backend
+    restart: always
+
+volumes:
+  postgres_data:
+  uploads_data:
+
+networks:
+  tuning-network:
+    name: tuning-network
+    driver: bridge

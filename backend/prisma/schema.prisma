@@ -1,0 +1,61 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+model User {
+  id         String      @id @default(uuid())
+  googleId   String      @unique
+  email      String      @unique
+  name       String
+  role       String      @default("user") // "user" | "admin"
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  vehicles   Vehicle[]
+  tuningLogs TuningLog[]
+}
+
+model Vehicle {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  weightKg      Int
+  horsepowerHp  Int
+  torqueNm      Int
+  modelPath     String
+  modelScale    Float       @default(1.0)
+  lengthM          Float?    // real-world car length in meters (drives auto-scale)
+  allowedParams String[]
+  config        Json?
+  isPublished      Boolean   @default(false) // admin-published catalog template
+  sourceTemplateId String?   // id of the published template this was cloned from
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  tuningLogs    TuningLog[]
+}
+
+model TuningLog {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleId     String
+  vehicle       Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  lapTime       String
+  feedbackNotes String?
+  createdAt     DateTime      @default(now())
+  values        TuningValue[]
+}
+
+model TuningValue {
+  id           String    @id @default(uuid())
+  tuningLogId  String
+  tuningLog    TuningLog @relation(fields: [tuningLogId], references: [id], onDelete: Cascade)
+  paramKey     String
+  paramValue   Float
+}

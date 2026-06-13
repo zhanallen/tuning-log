@@ -1,0 +1,45 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        background: "#121416",
+        surface: "#121416",
+        "surface-container-lowest": "#0c0e10",
+        "surface-container-low": "#1a1c1e",
+        "surface-container": "#1e2022",
+        "surface-container-high": "#282a2c",
+        "surface-container-highest": "#333537",
+        "surface-bright": "#38393c",
+        primary: "#ffb59a",
+        "primary-container": "#ff5c00",
+        "on-primary": "#5a1b00",
+        "on-primary-container": "#521800",
+        secondary: "#bdf4ff",
+        "secondary-container": "#00e3fd",
+        "on-secondary": "#00363d",
+        tertiary: "#8bdc00",
+        "tertiary-container": "#66a300",
+        "on-tertiary": "#1f3700",
+        error: "#ffb4ab",
+        "error-container": "#93000a",
+        "on-error": "#690005",
+        "on-background": "#e2e2e5",
+        "on-surface": "#e2e2e5",
+        "on-surface-variant": "#e4beb1",
+        outline: "#ab897d",
+        "outline-variant": "#5b4137",
+      },
+      fontFamily: {
+        body: ["Inter", "sans-serif"],
+        display: ["Space Grotesk", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
+      },
+    },
+  },
+  plugins: [],
+}
