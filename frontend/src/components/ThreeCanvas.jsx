@@ -220,15 +220,15 @@ function CameraController({ activePartKey }) {
 
     controls.addEventListener('start', handleInteraction);
     
-    // Also listen to wheel and pointer events directly to ensure zero latency zoom/rotate interrupt
-    const domEl = controls.domElement || window;
-    domEl.addEventListener('wheel', handleInteraction, { passive: true });
-    domEl.addEventListener('pointerdown', handleInteraction, { passive: true });
+    // Also listen to wheel and pointer events on window to ensure zoom/rotate interrupts work
+    // even if the user's cursor is positioned directly over the HTML overlay hotspots.
+    window.addEventListener('wheel', handleInteraction, { passive: true });
+    window.addEventListener('pointerdown', handleInteraction, { passive: true });
 
     return () => {
       controls.removeEventListener('start', handleInteraction);
-      domEl.removeEventListener('wheel', handleInteraction);
-      domEl.removeEventListener('pointerdown', handleInteraction);
+      window.removeEventListener('wheel', handleInteraction);
+      window.removeEventListener('pointerdown', handleInteraction);
     };
   }, [controls]);
 
