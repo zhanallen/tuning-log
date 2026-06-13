@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useStore, PARAM_CONFIGS } from '../store';
-import { History, FileDown, FileUp, Play, Trash2, Calendar, Clipboard, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { History, FileDown, FileUp, Play, Trash2, Calendar, Clipboard, CheckCircle, AlertCircle, X, ChevronDown } from 'lucide-react';
 import { TRACKS_PRESET } from '../constants/tracksPreset';
 
 export default function LogHistory() {
@@ -19,6 +19,9 @@ export default function LogHistory() {
   // Filtering states
   const [selectedTrack, setSelectedTrack] = useState('all');
   const [selectedLayout, setSelectedLayout] = useState('all');
+
+  // Expansion states
+  const [expandedLogs, setExpandedLogs] = useState({});
 
   // Preset Modal states
   const [showPresetModal, setShowPresetModal] = useState(false);
@@ -126,6 +129,13 @@ export default function LogHistory() {
   const handleTrackFilterChange = (track) => {
     setSelectedTrack(track);
     setSelectedLayout('all');
+  };
+
+  const toggleExpand = (logId) => {
+    setExpandedLogs(prev => ({
+      ...prev,
+      [logId]: !prev[logId]
+    }));
   };
 
   if (!currentVehicle) {
@@ -412,79 +422,98 @@ export default function LogHistory() {
             </div>
           ) : (
             <div className="space-y-4 max-h-[550px] overflow-y-auto pr-2">
-              {filteredLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className="glass-panel p-4 rounded-lg border border-outline-variant/30 hover:border-outline-variant/60 transition-all space-y-3 relative group"
-                >
-                  <header className="flex justify-between items-start">
-                    <div className="flex items-center gap-4">
-                      {/* Lap time display */}
-                      <div className="bg-surface-container border border-outline-variant/40 px-3 py-1.5 rounded font-mono text-lg font-bold text-secondary tracking-tight">
-                        {log.lap_time}
-                      </div>
-                      
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 text-[10px] font-mono text-outline">
-                          <Calendar size={12} />
-                          {new Date(log.created_at).toLocaleString('zh-TW')}
+              {filteredLogs.map((log) => {
+                const isExpanded = !!expandedLogs[log.id];
+                return (
+                  <div
+                    key={log.id}
+                    onClick={() => toggleExpand(log.id)}
+                    className="glass-panel p-4 rounded-lg border border-outline-variant/30 hover:border-outline-variant/60 hover:bg-surface-container/10 transition-all cursor-pointer relative group flex flex-col space-y-3"
+                  >
+                    <header className="flex justify-between items-start">
+                      <div className="flex items-center gap-4">
+                        {/* Lap time display */}
+                        <div className="bg-surface-container border border-outline-variant/40 px-3 py-1.5 rounded font-mono text-lg font-bold text-secondary tracking-tight">
+                          {log.lap_time}
                         </div>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                          <span className="bg-primary/10 text-primary border border-primary/20 text-[9px] font-mono px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            📍 {log.track_name || '未分類'}
-                          </span>
-                          {log.track_layout && (
-                            <span className="bg-secondary/10 text-secondary border border-secondary/20 text-[9px] font-mono px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                              📐 {log.track_layout}
+                        
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-[10px] font-mono text-outline">
+                            <Calendar size={12} />
+                            {new Date(log.created_at).toLocaleString('zh-TW')}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            <span className="bg-primary/10 text-primary border border-primary/20 text-[9px] font-mono px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                              📍 {log.track_name || '未分類'}
                             </span>
-                          )}
+                            {log.track_layout && (
+                              <span className="bg-secondary/10 text-secondary border border-secondary/20 text-[9px] font-mono px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                📐 {log.track_layout}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => applySetup(log.values)}
-                        className="bg-primary-container/10 border border-primary-container/30 hover:bg-primary-container text-primary-container hover:text-white text-xs font-bold px-3 py-1 rounded transition-all flex items-center gap-1"
-                        title="套用此設定值至當前調校面板"
-                      >
-                        <Play size={10} fill="currentColor" />
-                        套用設定
-                      </button>
-                      <button
-                        onClick={() => deleteLog(log.id)}
-                        className="text-outline/60 hover:text-error transition-colors p-1.5 rounded hover:bg-error-container/10"
-                        title="刪除此紀錄"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </header>
-
-                  {/* Feedback Notes */}
-                  {log.feedback_notes && (
-                    <div className="bg-surface/50 border border-outline-variant/20 p-2.5 rounded text-xs text-on-surface-variant font-body leading-relaxed flex gap-2">
-                      <Clipboard size={14} className="text-outline/60 flex-shrink-0 mt-0.5" />
-                      <p>{log.feedback_notes}</p>
-                    </div>
-                  )}
-
-                  {/* Parameters Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-outline-variant/10 font-mono text-[10px]">
-                    {log.values && log.values.map((v) => {
-                      const config = PARAM_CONFIGS[v.param_key];
-                      return (
-                        <div key={v.id} className="bg-surface-container/20 p-1.5 rounded border border-outline-variant/10 flex justify-between">
-                          <span className="text-outline/80 truncate max-w-[70px]" title={config?.name || v.param_key}>
-                            {config?.name || v.param_key}
-                          </span>
-                          <span className="text-primary font-bold">{v.param_value}{config?.unit}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            applySetup(log.values);
+                          }}
+                          className="bg-primary-container/10 border border-primary-container/30 hover:bg-primary-container text-primary-container hover:text-white text-xs font-bold px-3 py-1 rounded transition-all flex items-center gap-1"
+                          title="套用此設定值至當前調校面板"
+                        >
+                          <Play size={10} fill="currentColor" />
+                          套用設定
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteLog(log.id);
+                          }}
+                          className="text-outline/60 hover:text-error transition-colors p-1.5 rounded hover:bg-error-container/10"
+                          title="刪除此紀錄"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                        {/* Chevron indicator */}
+                        <div className={`text-outline/50 group-hover:text-on-surface transition-transform duration-200 flex-shrink-0 ml-1 ${isExpanded ? 'rotate-180' : ''}`}>
+                          <ChevronDown size={16} />
                         </div>
-                      );
-                    })}
+                      </div>
+                    </header>
+
+                    {/* Collapsible Section */}
+                    {isExpanded && (
+                      <div className="pt-3 border-t border-outline-variant/10 space-y-3 animate-fadeIn">
+                        {/* Feedback Notes */}
+                        {log.feedback_notes && (
+                          <div className="bg-surface/50 border border-outline-variant/20 p-2.5 rounded text-xs text-on-surface-variant font-body leading-relaxed flex gap-2">
+                            <Clipboard size={14} className="text-outline/60 flex-shrink-0 mt-0.5" />
+                            <p>{log.feedback_notes}</p>
+                          </div>
+                        )}
+
+                        {/* Parameters Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-[10px]">
+                          {log.values && log.values.map((v) => {
+                            const config = PARAM_CONFIGS[v.param_key];
+                            return (
+                              <div key={v.id} className="bg-surface-container/20 p-1.5 rounded border border-outline-variant/10 flex justify-between">
+                                <span className="text-outline/80 truncate max-w-[70px]" title={config?.name || v.param_key}>
+                                  {config?.name || v.param_key}
+                                </span>
+                                <span className="text-primary font-bold">{v.param_value}{config?.unit}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -530,7 +559,7 @@ export default function LogHistory() {
             {/* Tracks List */}
             <div className="flex-1 overflow-y-auto mt-4 pr-1 space-y-3">
               {TRACKS_PRESET[activePresetCountry]?.map((track) => (
-                <div key={track.name} className="p-3 bg-surface/50 border border-outline-variant/20 rounded hover:border-outline-variant/50 transition-all space-y-2">
+                <div key={track.name} className="p-3 bg-surface/50 border border-outline-variant/50 transition-all space-y-2">
                   <div className="flex justify-between items-baseline flex-wrap gap-2">
                     <h4 className="text-sm font-bold text-on-surface font-display">{track.name}</h4>
                     <span className="text-[10px] text-outline font-mono uppercase">{track.englishName}</span>
