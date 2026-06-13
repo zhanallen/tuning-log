@@ -217,7 +217,7 @@ export default function App() {
                   <span className="font-display text-3xl font-bold text-on-surface">
                     {currentVehicle ? currentVehicle.horsepower_hp : '---'}
                   </span>
-                  <span className="font-display text-xs text-primary font-bold">HP</span>
+                  <span className="font-display text-sm text-primary font-bold">HP</span>
                 </div>
               </div>
 
@@ -229,7 +229,7 @@ export default function App() {
                   <span className="font-display text-3xl font-bold text-on-surface">
                     {currentVehicle ? currentVehicle.torque_nm : '---'}
                   </span>
-                  <span className="font-display text-xs text-secondary font-bold">Nm</span>
+                  <span className="font-display text-sm text-secondary font-bold">Nm</span>
                 </div>
               </div>
 
@@ -241,7 +241,7 @@ export default function App() {
                   <span className="font-display text-3xl font-bold text-on-surface">
                     {currentVehicle ? currentVehicle.weight_kg : '---'}
                   </span>
-                  <span className="font-display text-xs text-tertiary font-bold">kg</span>
+                  <span className="font-display text-sm text-tertiary font-bold">kg</span>
                 </div>
               </div>
             </section>
