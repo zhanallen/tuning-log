@@ -448,7 +448,7 @@ export default function LogHistory() {
                             </span>
                             {log.track_layout && (
                               <span className="bg-secondary/10 text-secondary border border-secondary/20 text-[9px] font-mono px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                                📐 {log.track_layout}
+                                {log.track_layout}
                               </span>
                             )}
                           </div>
