@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useStore, PARAM_CONFIGS } from '../store';
-import { History, FileDown, FileUp, Play, Trash2, Calendar, Clipboard, CheckCircle, AlertCircle } from 'lucide-react';
+import { History, FileDown, FileUp, Play, Trash2, Calendar, Clipboard, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { TRACKS_PRESET } from '../constants/tracksPreset';
 
 export default function LogHistory() {
   const { currentVehicle, logs, saveLog, deleteLog, applySetup, exportBackup, importBackup } = useStore();
@@ -8,10 +9,20 @@ export default function LogHistory() {
   // Log creation states
   const [lapTime, setLapTime] = useState('');
   const [notes, setNotes] = useState('');
+  const [trackName, setTrackName] = useState('');
+  const [trackLayout, setTrackLayout] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [validationError, setValidationError] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Filtering states
+  const [selectedTrack, setSelectedTrack] = useState('all');
+  const [selectedLayout, setSelectedLayout] = useState('all');
+
+  // Preset Modal states
+  const [showPresetModal, setShowPresetModal] = useState(false);
+  const [activePresetCountry, setActivePresetCountry] = useState('台灣 🇹🇼');
 
   // Parse and normalize flexible input format (e.g., 1:23.493 or 23.49 -> 01:23.493 or 00:23.490)
   const parseAndNormalizeLapTime = (timeStr) => {
@@ -73,11 +84,14 @@ export default function LogHistory() {
     }
 
     try {
-      const success = await saveLog(normalized, notes);
+      const success = await saveLog(normalized, notes, trackName, trackLayout);
       if (success) {
         setSuccessMsg('日誌儲存成功！');
         setLapTime('');
         setNotes('');
+        setTrackName('');
+        setTrackLayout('');
+        setValidationError(false);
         setTimeout(() => setSuccessMsg(''), 3000);
       }
     } catch (err) {
@@ -109,6 +123,11 @@ export default function LogHistory() {
     reader.readAsText(file);
   };
 
+  const handleTrackFilterChange = (track) => {
+    setSelectedTrack(track);
+    setSelectedLayout('all');
+  };
+
   if (!currentVehicle) {
     return (
       <div className="flex-grow flex items-center justify-center p-6 text-on-surface-variant font-mono text-sm">
@@ -116,6 +135,28 @@ export default function LogHistory() {
       </div>
     );
   }
+
+  // Auto-suggestions list
+  const existingTracks = Array.from(new Set(logs.map(l => l.track_name || '未分類')));
+  const existingLayouts = trackName 
+    ? Array.from(new Set(logs.filter(l => (l.track_name || '未分類') === trackName).map(l => l.track_layout).filter(Boolean)))
+    : [];
+
+  // Tracks for filtering (sorted)
+  const filterTracks = Array.from(new Set(logs.map(l => l.track_name || '未分類'))).sort();
+
+  // Layouts for filtering (sorted)
+  const filterLayouts = selectedTrack !== 'all'
+    ? Array.from(new Set(logs.filter(l => (l.track_name || '未分類') === selectedTrack).map(l => l.track_layout).filter(Boolean))).sort()
+    : [];
+
+  // Filtered logs
+  const filteredLogs = logs.filter(log => {
+    const logTrack = log.track_name || '未分類';
+    const matchTrack = selectedTrack === 'all' || logTrack === selectedTrack;
+    const matchLayout = selectedLayout === 'all' || log.track_layout === selectedLayout;
+    return matchTrack && matchLayout;
+  });
 
   return (
     <div className="flex-1 overflow-y-auto p-6 max-w-5xl mx-auto w-full space-y-6">
@@ -178,6 +219,48 @@ export default function LogHistory() {
             <div className="absolute top-0 left-0 w-full h-[1px] bg-primary-container"></div>
             <h3 className="text-sm font-mono font-bold text-primary uppercase tracking-wider">[ 儲存當前設定日誌 ]</h3>
             
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-mono text-outline mb-1 flex justify-between items-center">
+                  <span>賽道名稱</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowPresetModal(true)}
+                    className="text-[10px] text-primary hover:underline font-mono flex items-center gap-0.5"
+                  >
+                    🏁 預設
+                  </button>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={trackName}
+                  onChange={(e) => setTrackName(e.target.value)}
+                  placeholder="如: 麗寶國際賽車場"
+                  list="tracks-datalist"
+                  className="w-full bg-surface border border-outline-variant/50 focus:border-primary-container p-2 rounded text-sm text-on-surface font-mono focus:outline-none"
+                />
+                <datalist id="tracks-datalist">
+                  {existingTracks.map(t => <option key={t} value={t} />)}
+                </datalist>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-outline mb-1">佈局 / 方向 (選填)</label>
+                <input
+                  type="text"
+                  value={trackLayout}
+                  onChange={(e) => setTrackLayout(e.target.value)}
+                  placeholder="如: 23彎全賽道"
+                  list="layouts-datalist"
+                  className="w-full bg-surface border border-outline-variant/50 focus:border-primary-container p-2 rounded text-sm text-on-surface font-mono focus:outline-none"
+                />
+                <datalist id="layouts-datalist">
+                  {existingLayouts.map(l => <option key={l} value={l} />)}
+                </datalist>
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-mono text-outline mb-1">本圈單圈成績</label>
               <input
@@ -240,14 +323,96 @@ export default function LogHistory() {
             <History size={16} />
             歷史調校設定日誌 ({logs.length})
           </h3>
+
+          {/* Track and Layout filter pills */}
+          {filterTracks.length > 0 && (
+            <div className="space-y-2 bg-surface-container/20 border border-outline-variant/10 p-3 rounded-lg">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono text-outline">
+                <span>📍 依賽道分類:</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleTrackFilterChange('all')}
+                  className={`px-3 py-1 rounded-full text-xs font-mono transition-all ${
+                    selectedTrack === 'all'
+                      ? 'bg-primary text-white shadow-[0_0_10px_rgba(255,92,0,0.3)]'
+                      : 'bg-surface-container border border-outline-variant/20 text-on-surface-variant hover:border-primary'
+                  }`}
+                >
+                  全部 ({logs.length})
+                </button>
+                {filterTracks.map(track => {
+                  const count = logs.filter(l => (l.track_name || '未分類') === track).length;
+                  return (
+                    <button
+                      key={track}
+                      type="button"
+                      onClick={() => handleTrackFilterChange(track)}
+                      className={`px-3 py-1 rounded-full text-xs font-mono transition-all ${
+                        selectedTrack === track
+                          ? 'bg-primary text-white shadow-[0_0_10px_rgba(255,92,0,0.3)]'
+                          : 'bg-surface-container border border-outline-variant/20 text-on-surface-variant hover:border-primary'
+                      }`}
+                    >
+                      {track} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Sub-filtering: Layouts */}
+              {selectedTrack !== 'all' && filterLayouts.length > 0 && (
+                <div className="pt-2 mt-2 border-t border-outline-variant/10 space-y-2">
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-outline">
+                    <span>📐 細分布局/方向:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLayout('all')}
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono transition-all ${
+                        selectedLayout === 'all'
+                          ? 'bg-secondary text-white'
+                          : 'bg-surface-container border border-outline-variant/20 text-on-surface-variant hover:border-secondary'
+                      }`}
+                    >
+                      全部佈局 ({logs.filter(l => (l.track_name || '未分類') === selectedTrack).length})
+                    </button>
+                    {filterLayouts.map(layout => {
+                      const count = logs.filter(l => (l.track_name || '未分類') === selectedTrack && l.track_layout === layout).length;
+                      return (
+                        <button
+                          key={layout}
+                          type="button"
+                          onClick={() => setSelectedLayout(layout)}
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono transition-all ${
+                            selectedLayout === layout
+                              ? 'bg-secondary text-white'
+                              : 'bg-surface-container border border-outline-variant/20 text-on-surface-variant hover:border-secondary'
+                          }`}
+                        >
+                          {layout} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           
           {logs.length === 0 ? (
             <div className="glass-panel p-8 text-center rounded-lg text-on-surface-variant font-mono text-xs">
               該車輛目前無歷史調校日誌紀錄。
             </div>
+          ) : filteredLogs.length === 0 ? (
+            <div className="glass-panel p-8 text-center rounded-lg text-on-surface-variant font-mono text-xs">
+              該分類下無符合的歷史調校日誌。
+            </div>
           ) : (
             <div className="space-y-4 max-h-[550px] overflow-y-auto pr-2">
-              {logs.map((log) => (
+              {filteredLogs.map((log) => (
                 <div
                   key={log.id}
                   className="glass-panel p-4 rounded-lg border border-outline-variant/30 hover:border-outline-variant/60 transition-all space-y-3 relative group"
@@ -263,6 +428,16 @@ export default function LogHistory() {
                         <div className="flex items-center gap-1.5 text-[10px] font-mono text-outline">
                           <Calendar size={12} />
                           {new Date(log.created_at).toLocaleString('zh-TW')}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          <span className="bg-primary/10 text-primary border border-primary/20 text-[9px] font-mono px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            📍 {log.track_name || '未分類'}
+                          </span>
+                          {log.track_layout && (
+                            <span className="bg-secondary/10 text-secondary border border-secondary/20 text-[9px] font-mono px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                              📐 {log.track_layout}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -314,6 +489,86 @@ export default function LogHistory() {
           )}
         </div>
       </div>
+
+      {/* Preset Tracks Selection Modal */}
+      {showPresetModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-fadeIn">
+          <div className="glass-panel w-full max-w-2xl max-h-[85vh] flex flex-col p-6 rounded-lg relative overflow-hidden border border-outline-variant/30 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary-container to-transparent shadow-[0_0_10px_#ff5c00]"></div>
+            
+            <header className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-bold font-display text-on-surface">🏁 選擇預設賽道</h3>
+                <p className="text-xs text-outline font-mono mt-0.5">請先選擇國家，再帶入對應賽道名稱及佈局項目</p>
+              </div>
+              <button
+                onClick={() => setShowPresetModal(false)}
+                className="p-1 text-outline hover:text-on-surface hover:bg-surface-container rounded transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            {/* Country tabs */}
+            <div className="flex flex-wrap gap-1.5 pb-3 border-b border-outline-variant/20 max-h-[120px] overflow-y-auto">
+              {Object.keys(TRACKS_PRESET).map((country) => (
+                <button
+                  type="button"
+                  key={country}
+                  onClick={() => setActivePresetCountry(country)}
+                  className={`px-3 py-1.5 rounded text-xs font-mono font-medium transition-all ${
+                    activePresetCountry === country
+                      ? 'bg-primary-container text-white border border-primary-container shadow-[0_0_10px_rgba(255,92,0,0.2)]'
+                      : 'bg-surface border border-outline-variant/30 text-on-surface-variant hover:border-primary'
+                  }`}
+                >
+                  {country}
+                </button>
+              ))}
+            </div>
+
+            {/* Tracks List */}
+            <div className="flex-1 overflow-y-auto mt-4 pr-1 space-y-3">
+              {TRACKS_PRESET[activePresetCountry]?.map((track) => (
+                <div key={track.name} className="p-3 bg-surface/50 border border-outline-variant/20 rounded hover:border-outline-variant/50 transition-all space-y-2">
+                  <div className="flex justify-between items-baseline flex-wrap gap-2">
+                    <h4 className="text-sm font-bold text-on-surface font-display">{track.name}</h4>
+                    <span className="text-[10px] text-outline font-mono uppercase">{track.englishName}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTrackName(track.name);
+                        setTrackLayout('');
+                        setShowPresetModal(false);
+                      }}
+                      className="px-2 py-0.5 bg-surface-container border border-outline-variant/30 hover:border-primary text-[9px] rounded text-on-surface font-mono transition-all"
+                    >
+                      僅帶入賽道名稱
+                    </button>
+                    {track.layouts.map((layout) => (
+                      <button
+                        type="button"
+                        key={layout}
+                        onClick={() => {
+                          setTrackName(track.name);
+                          setTrackLayout(layout);
+                          setValidationError(false);
+                          setShowPresetModal(false);
+                        }}
+                        className="px-2 py-0.5 bg-primary/10 border border-primary/20 hover:bg-primary-container hover:text-white text-[9px] rounded text-primary font-mono transition-all"
+                      >
+                        ⚡ {layout}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -47,6 +47,8 @@ model TuningLog {
   vehicleId     String
   vehicle       Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   lapTime       String
+  trackName     String        @default("未分類")
+  trackLayout   String?
   feedbackNotes String?
   createdAt     DateTime      @default(now())
   values        TuningValue[]

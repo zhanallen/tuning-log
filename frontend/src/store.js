@@ -503,7 +503,7 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  saveLog: async (lapTime, feedbackNotes) => {
+  saveLog: async (lapTime, feedbackNotes, trackName, trackLayout) => {
     const currentVehicle = get().currentVehicle;
     if (!currentVehicle) return false;
     
@@ -515,6 +515,8 @@ export const useStore = create((set, get) => ({
           vehicle_id: currentVehicle.id,
           lap_time: lapTime,
           feedback_notes: feedbackNotes,
+          track_name: trackName,
+          track_layout: trackLayout,
           params: get().currentParams
         })
       });

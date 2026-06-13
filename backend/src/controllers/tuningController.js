@@ -369,6 +369,8 @@ export async function getLogs(req, res) {
       id: l.id,
       vehicle_id: l.vehicleId,
       lap_time: l.lapTime,
+      track_name: l.trackName,
+      track_layout: l.trackLayout,
       feedback_notes: l.feedbackNotes,
       created_at: l.createdAt,
       values: l.values.map(v => ({
@@ -387,7 +389,7 @@ export async function getLogs(req, res) {
 
 export async function createLog(req, res) {
   const userId = req.user.userId;
-  const { vehicle_id, lap_time, feedback_notes, params } = req.body;
+  const { vehicle_id, lap_time, feedback_notes, params, track_name, track_layout } = req.body;
 
   // Validate and normalize lap time format (REQ-SW-017)
   const normalizedLapTime = parseAndNormalizeLapTime(lap_time);
@@ -417,6 +419,8 @@ export async function createLog(req, res) {
           userId,
           vehicleId: vehicle_id,
           lapTime: normalizedLapTime,
+          trackName: (track_name && track_name.trim()) || "未分類",
+          trackLayout: (track_layout && track_layout.trim()) || null,
           feedbackNotes: safeFeedbackNotes
         }
       });
@@ -490,6 +494,8 @@ export async function exportBackup(req, res) {
         id: l.id,
         vehicle_id: l.vehicleId,
         lap_time: l.lapTime,
+        track_name: l.trackName,
+        track_layout: l.trackLayout,
         feedback_notes: l.feedbackNotes,
         created_at: l.createdAt,
         values: l.values.map(val => ({
@@ -543,12 +549,16 @@ export async function importBackup(req, res) {
             const lapTime = l.lap_time !== undefined ? l.lap_time : l.lapTime;
             const feedbackNotes = l.feedback_notes !== undefined ? l.feedback_notes : l.feedbackNotes;
             const createdAt = l.created_at !== undefined ? l.created_at : l.createdAt;
+            const trackName = l.track_name !== undefined ? l.track_name : l.trackName || "未分類";
+            const trackLayout = l.track_layout !== undefined ? l.track_layout : l.trackLayout || null;
             
-            // Check if log already exists based on lapTime and userId
+            // Check if log already exists based on lapTime, trackName, trackLayout and userId
             const existingLog = await tx.tuningLog.findFirst({
               where: {
                 vehicleId: vehicle.id,
                 lapTime,
+                trackName,
+                trackLayout,
                 feedbackNotes
               }
             });
@@ -559,6 +569,8 @@ export async function importBackup(req, res) {
                   userId,
                   vehicleId: vehicle.id,
                   lapTime,
+                  trackName,
+                  trackLayout,
                   feedbackNotes,
                   createdAt: createdAt ? new Date(createdAt) : new Date(),
                 }
