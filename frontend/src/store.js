@@ -66,7 +66,7 @@ export const useStore = create((set, get) => ({
   authError: null,
 
   // UI State
-  activeView: 'tuning', // 'garage' | 'tuning' | 'logs'
+  activeView: 'garage', // 'garage' | 'tuning' | 'logs'
   activePartKey: null, // active 3D hotspot component
   isAdminMode: false,
   
