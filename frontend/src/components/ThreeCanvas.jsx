@@ -159,7 +159,6 @@ function CameraController({ activePartKey }) {
   const [animating, setAnimating] = useState(false);
   const targetPos = useRef(new THREE.Vector3());
   const targetLook = useRef(new THREE.Vector3());
-  const shouldLerpPosition = useRef(true);
 
   // Dynamic Focus targets based on calibrated hotspots
   const fl = config.hotspots.pressure_fl;
@@ -187,17 +186,16 @@ function CameraController({ activePartKey }) {
     susp_d_r: { pos: [sdr[0] + 1.25, sdr[1] + 0.4, sdr[2] - 0.25], look: sdr },
   };
 
-  // Trigger lerping camera target and optionally position when activePartKey changes
+  // Trigger lerping camera to focus position (both target and close-up position) when activePartKey changes
   useEffect(() => {
     if (activePartKey && dynamicTargets[activePartKey]) {
       const t = dynamicTargets[activePartKey];
+      targetPos.current.set(t.pos[0], t.pos[1], t.pos[2]);
       targetLook.current.set(t.look[0], t.look[1], t.look[2]);
-      shouldLerpPosition.current = false;
     } else {
       // Default overview position
       targetPos.current.set(3.2, 1.8, 4.2);
       targetLook.current.set(0, 0.45, 0);
-      shouldLerpPosition.current = true;
     }
     setAnimating(true);
   }, [activePartKey]);
@@ -212,7 +210,7 @@ function CameraController({ activePartKey }) {
     }
   }, [activePartKey, fl, fr, rl, rr, af, ar, shf, sdf, shr, sdr, controls]);
 
-  // Interrupt animation if the user manually interacts with OrbitControls (drag/pan/zoom)
+  // Interrupt animation if the user manually interacts with OrbitControls (drag/pan/zoom/wheel)
   useEffect(() => {
     if (!controls) return;
 
@@ -221,18 +219,24 @@ function CameraController({ activePartKey }) {
     };
 
     controls.addEventListener('start', handleInteraction);
+    
+    // Also listen to wheel and pointer events directly to ensure zero latency zoom/rotate interrupt
+    const domEl = controls.domElement || window;
+    domEl.addEventListener('wheel', handleInteraction, { passive: true });
+    domEl.addEventListener('pointerdown', handleInteraction, { passive: true });
+
     return () => {
       controls.removeEventListener('start', handleInteraction);
+      domEl.removeEventListener('wheel', handleInteraction);
+      domEl.removeEventListener('pointerdown', handleInteraction);
     };
   }, [controls]);
 
   useFrame(() => {
     if (!animating) return;
 
-    // Lerp camera position only when resetting to overview
-    if (shouldLerpPosition.current) {
-      camera.position.lerp(targetPos.current, 0.05);
-    }
+    // Lerp camera position
+    camera.position.lerp(targetPos.current, 0.05);
 
     // Lerp OrbitControls target
     if (controls) {
@@ -240,8 +244,8 @@ function CameraController({ activePartKey }) {
       controls.update();
     }
 
-    // Stop animating when target is close to target positions
-    const distCam = shouldLerpPosition.current ? camera.position.distanceTo(targetPos.current) : 0;
+    // Stop animating when camera is close to target positions
+    const distCam = camera.position.distanceTo(targetPos.current);
     const distLook = controls ? controls.target.distanceTo(targetLook.current) : 0;
     
     if (distCam < 0.02 && distLook < 0.02) {
