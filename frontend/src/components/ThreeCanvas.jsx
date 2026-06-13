@@ -159,6 +159,7 @@ function CameraController({ activePartKey }) {
   const [animating, setAnimating] = useState(false);
   const targetPos = useRef(new THREE.Vector3());
   const targetLook = useRef(new THREE.Vector3());
+  const shouldLerpPosition = useRef(true);
 
   // Dynamic Focus targets based on calibrated hotspots
   const fl = config.hotspots.pressure_fl;
@@ -186,16 +187,17 @@ function CameraController({ activePartKey }) {
     susp_d_r: { pos: [sdr[0] + 1.25, sdr[1] + 0.4, sdr[2] - 0.25], look: sdr },
   };
 
-  // Trigger lerping camera to focus position ONLY when activePartKey changes
+  // Trigger lerping camera target and optionally position when activePartKey changes
   useEffect(() => {
     if (activePartKey && dynamicTargets[activePartKey]) {
       const t = dynamicTargets[activePartKey];
-      targetPos.current.set(t.pos[0], t.pos[1], t.pos[2]);
       targetLook.current.set(t.look[0], t.look[1], t.look[2]);
+      shouldLerpPosition.current = false;
     } else {
       // Default overview position
       targetPos.current.set(3.2, 1.8, 4.2);
       targetLook.current.set(0, 0.45, 0);
+      shouldLerpPosition.current = true;
     }
     setAnimating(true);
   }, [activePartKey]);
@@ -227,8 +229,10 @@ function CameraController({ activePartKey }) {
   useFrame(() => {
     if (!animating) return;
 
-    // Lerp camera position
-    camera.position.lerp(targetPos.current, 0.05);
+    // Lerp camera position only when resetting to overview
+    if (shouldLerpPosition.current) {
+      camera.position.lerp(targetPos.current, 0.05);
+    }
 
     // Lerp OrbitControls target
     if (controls) {
@@ -236,8 +240,8 @@ function CameraController({ activePartKey }) {
       controls.update();
     }
 
-    // Stop animating when camera is close to the target to release control to user
-    const distCam = camera.position.distanceTo(targetPos.current);
+    // Stop animating when target is close to target positions
+    const distCam = shouldLerpPosition.current ? camera.position.distanceTo(targetPos.current) : 0;
     const distLook = controls ? controls.target.distanceTo(targetLook.current) : 0;
     
     if (distCam < 0.02 && distLook < 0.02) {
@@ -246,6 +250,55 @@ function CameraController({ activePartKey }) {
   });
 
   return null;
+}
+
+// Interactive Hotspot Element with hover-boosting zIndex and layering support
+function HotspotElement({ spot, isSelected, currentVal, config, isAero, setActivePartKey }) {
+  const [hovered, setHovered] = useState(false);
+
+  // Boost z-index on hover (70-80) and selection (90-100) to keep labels on top of other hotspots
+  const zIndexRange = isSelected
+    ? [100, 90]
+    : (hovered ? [80, 70] : [30, 0]);
+
+  return (
+    <Html
+      position={spot.pos}
+      distanceFactor={5.5}
+      center
+      zIndexRange={zIndexRange}
+    >
+      <div 
+        className="relative flex items-center justify-center select-none group"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {/* Floating value tag on hover or selection (with z-10 to stay on top of the dot within same context) */}
+        <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 rounded border text-[9px] font-mono whitespace-nowrap transition-all duration-200 z-10 ${
+          isSelected
+            ? 'bg-primary-container text-white border-primary-container scale-105 shadow-[0_0_8px_#ff5c00]'
+            : 'bg-background/90 text-outline border-outline-variant/50 opacity-0 group-hover:opacity-100'
+        }`}>
+          {spot.name}: <span className="font-bold">{currentVal}{config?.unit}</span>
+        </div>
+
+        {/* Hotspot circular button (z-0) */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setActivePartKey(isSelected ? null : spot.key);
+          }}
+          className={`w-3.5 h-3.5 rounded-full border-2 border-background cursor-pointer transition-all duration-200 flex items-center justify-center z-0 ${
+            isAero
+              ? `bg-tertiary ${isSelected ? 'scale-125 shadow-[0_0_15px_#8bdc00]' : 'hotspot-pulse-aero'}`
+              : `bg-primary ${isSelected ? 'scale-125 shadow-[0_0_15px_#ffb59a]' : 'hotspot-pulse-susp'}`
+          }`}
+        >
+          <div className="w-1 h-1 bg-background rounded-full"></div>
+        </button>
+      </div>
+    </Html>
+  );
 }
 
 export default function ThreeCanvas() {
@@ -310,48 +363,16 @@ export default function ThreeCanvas() {
               ? currentParams[spot.key] 
               : config?.default || 0;
 
-            const isAero = spot.type === 'aero';
-
             return (
-              <Html
+              <HotspotElement
                 key={spot.key}
-                position={spot.pos}
-                distanceFactor={5.5}
-                center
-                zIndexRange={[30, 0]}
-              >
-                {/* `center` anchors this wrapper's center on the 3D point. The
-                    value tag is absolutely positioned so it floats above the dot
-                    without shifting the anchor, keeping the dot exactly on the
-                    calibrated coordinate from every camera angle. */}
-                <div className="relative flex items-center justify-center select-none group">
-
-                  {/* Floating value tag on hover or selection */}
-                  <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 rounded border text-[9px] font-mono whitespace-nowrap transition-all duration-200 ${
-                    isSelected
-                      ? 'bg-primary-container text-white border-primary-container scale-105 shadow-[0_0_8px_#ff5c00]'
-                      : 'bg-background/90 text-outline border-outline-variant/50 opacity-0 group-hover:opacity-100'
-                  }`}>
-                    {spot.name}: <span className="font-bold">{currentVal}{config?.unit}</span>
-                  </div>
-
-                  {/* Hotspot circular button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Toggle active selection
-                      setActivePartKey(isSelected ? null : spot.key);
-                    }}
-                    className={`w-3.5 h-3.5 rounded-full border-2 border-background cursor-pointer transition-all duration-200 flex items-center justify-center ${
-                      isAero
-                        ? `bg-tertiary ${isSelected ? 'scale-125 shadow-[0_0_15px_#8bdc00]' : 'hotspot-pulse-aero'}`
-                        : `bg-primary ${isSelected ? 'scale-125 shadow-[0_0_15px_#ffb59a]' : 'hotspot-pulse-susp'}`
-                    }`}
-                  >
-                    <div className="w-1 h-1 bg-background rounded-full"></div>
-                  </button>
-                </div>
-              </Html>
+                spot={spot}
+                isSelected={isSelected}
+                currentVal={currentVal}
+                config={config}
+                isAero={spot.type === 'aero'}
+                setActivePartKey={setActivePartKey}
+              />
             );
           })}
         </Suspense>
