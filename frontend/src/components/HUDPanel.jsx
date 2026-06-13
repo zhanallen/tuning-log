@@ -44,7 +44,7 @@ export default function HUDPanel() {
   };
 
   return (
-    <div className="absolute right-4 top-4 z-40 w-80 max-h-[calc(100vh-7rem)] rounded-lg border border-primary-container bg-background/95 backdrop-blur-xl p-5 shadow-[0_0_30px_rgba(255,92,0,0.25)] flex flex-col group overflow-hidden">
+    <div className="absolute right-4 top-4 z-40 w-80 max-h-[calc(100%-6rem)] rounded-lg border border-primary-container bg-background/95 backdrop-blur-xl p-5 shadow-[0_0_30px_rgba(255,92,0,0.25)] flex flex-col group overflow-hidden">
       
       {/* Red top border glow */}
       <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary-container to-transparent"></div>

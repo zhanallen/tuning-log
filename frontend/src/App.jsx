@@ -239,7 +239,7 @@ export default function App() {
 
                   {/* Engineering Admin Control Panel */}
                   {isAdminMode && isAdmin && (
-                    <div className="absolute top-14 left-4 z-40 w-80 max-h-[calc(100vh-7rem)] rounded-lg border border-secondary-container/60 bg-background/95 backdrop-blur-xl p-4 shadow-[0_0_25px_rgba(0,227,253,0.2)] flex flex-col overflow-hidden transition-all duration-300">
+                    <div className="absolute top-14 left-4 z-40 w-80 max-h-[calc(100%-8rem)] rounded-lg border border-secondary-container/60 bg-background/95 backdrop-blur-xl p-4 shadow-[0_0_25px_rgba(0,227,253,0.2)] flex flex-col overflow-hidden transition-all duration-300">
                       {/* Cyan top indicator bar */}
                       <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-secondary-container to-transparent"></div>
                       
@@ -734,36 +734,38 @@ export default function App() {
                   </button>
                 </div>
               )}
-            </div>
 
-            {/* Bottom floating menu (HUD style) */}
-            <div className="flex-shrink-0 flex justify-center py-2 z-10">
-              <div className="flex items-center gap-2 bg-background/80 backdrop-blur-xl border border-primary-container/40 p-1.5 rounded-full shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-                <button 
-                  onClick={() => {
-                    if (currentVehicle) setActiveView('logs');
-                  }}
-                  className="bg-primary-container text-white font-display text-xs font-bold px-6 py-2.5 rounded-full hover:bg-primary-container/80 transition-all shadow-[0_0_15px_rgba(255,92,0,0.3)]"
-                >
-                  儲存當前設定
-                </button>
-                <div className="w-px h-5 bg-outline-variant/30 mx-2"></div>
-                
-                <button 
-                  onClick={() => setActiveView('garage')}
-                  className="flex items-center justify-center gap-1.5 text-on-surface-variant font-display text-xs font-semibold px-4 py-2 hover:text-primary-container transition-colors rounded-full"
-                >
-                  <Car size={13} />
-                  車庫
-                </button>
+              {/* Floating action bar — overlays the bottom of the 3D preview so it
+                  no longer takes a layout row (removes the blank area below) and
+                  doesn't crowd the side HUD panels. */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30">
+                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-xl border border-primary-container/40 p-1.5 rounded-full shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+                  <button
+                    onClick={() => {
+                      if (currentVehicle) setActiveView('logs');
+                    }}
+                    className="bg-primary-container text-white font-display text-xs font-bold px-6 py-2.5 rounded-full hover:bg-primary-container/80 transition-all shadow-[0_0_15px_rgba(255,92,0,0.3)]"
+                  >
+                    儲存當前設定
+                  </button>
+                  <div className="w-px h-5 bg-outline-variant/30 mx-2"></div>
 
-                <button 
-                  onClick={() => alert('已連線 3D 底盤診斷系統: 狀態良好')}
-                  className="flex items-center justify-center gap-1.5 text-on-surface-variant font-display text-xs font-semibold px-4 py-2 hover:text-primary-container transition-colors rounded-full"
-                >
-                  <Settings size={13} />
-                  底盤診斷
-                </button>
+                  <button
+                    onClick={() => setActiveView('garage')}
+                    className="flex items-center justify-center gap-1.5 text-on-surface-variant font-display text-xs font-semibold px-4 py-2 hover:text-primary-container transition-colors rounded-full"
+                  >
+                    <Car size={13} />
+                    車庫
+                  </button>
+
+                  <button
+                    onClick={() => alert('已連線 3D 底盤診斷系統: 狀態良好')}
+                    className="flex items-center justify-center gap-1.5 text-on-surface-variant font-display text-xs font-semibold px-4 py-2 hover:text-primary-container transition-colors rounded-full"
+                  >
+                    <Settings size={13} />
+                    底盤診斷
+                  </button>
+                </div>
               </div>
             </div>
           </div>
