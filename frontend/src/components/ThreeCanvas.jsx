@@ -210,6 +210,20 @@ function CameraController({ activePartKey }) {
     }
   }, [activePartKey, fl, fr, rl, rr, af, ar, shf, sdf, shr, sdr, controls]);
 
+  // Interrupt animation if the user manually interacts with OrbitControls (drag/pan/zoom)
+  useEffect(() => {
+    if (!controls) return;
+
+    const handleInteraction = () => {
+      setAnimating(false);
+    };
+
+    controls.addEventListener('start', handleInteraction);
+    return () => {
+      controls.removeEventListener('start', handleInteraction);
+    };
+  }, [controls]);
+
   useFrame(() => {
     if (!animating) return;
 
