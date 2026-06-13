@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Html, useGLTF } from '@react-three/drei';
+import { OrbitControls, Html, useGLTF, useProgress } from '@react-three/drei';
+import { Loader2 } from 'lucide-react';
 import { useStore, PARAM_CONFIGS, getVehicleConfig } from '../store';
 import * as THREE from 'three';
 
@@ -328,6 +329,45 @@ function HotspotElement({ spot, isSelected, currentVal, config, isAero, setActiv
   );
 }
 
+// Full-canvas loading overlay shown while the GLB model downloads, so users on
+// slow networks see clear progress instead of an empty/black canvas and assume
+// the page froze. Driven by drei's useProgress (THREE's DefaultLoadingManager),
+// which also re-fires whenever a different vehicle's model starts loading.
+function ModelLoadingOverlay({ vehicleName }) {
+  const { active, progress } = useProgress();
+
+  return (
+    <div
+      className={`absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-[#1a1c1e] to-[#0c0e10] transition-opacity duration-500 ${
+        active ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}
+    >
+      <Loader2 className="animate-spin text-primary" size={40} strokeWidth={2.5} />
+
+      <div className="flex flex-col items-center gap-2 w-48">
+        <span className="font-display text-xs font-bold text-on-surface tracking-wide">
+          載入 3D 模型中…
+        </span>
+        {vehicleName && (
+          <span className="font-mono text-[10px] text-outline truncate max-w-full">
+            {vehicleName}
+          </span>
+        )}
+
+        <div className="w-full h-1 bg-surface-container-high rounded-full overflow-hidden mt-1">
+          <div
+            className="h-full bg-primary-container rounded-full transition-all duration-200"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <span className="font-mono text-[10px] text-on-surface-variant">
+          {Math.round(progress)}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function ThreeCanvas() {
   const { currentVehicle, activePartKey, setActivePartKey, currentParams } = useStore();
 
@@ -415,6 +455,8 @@ export default function ThreeCanvas() {
         
         <CameraController activePartKey={activePartKey} />
       </Canvas>
+
+      <ModelLoadingOverlay vehicleName={currentVehicle.name} />
     </div>
   );
 }
