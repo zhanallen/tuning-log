@@ -69,6 +69,26 @@ export default function App() {
     }
   }, [isAuthenticated, fetchVehicles]);
 
+  // Clean up guest data immediately on tab/window close
+  useEffect(() => {
+    const handleUnload = () => {
+      if (user && user.email && user.email.startsWith('guest_')) {
+        fetch('/api/v1/auth/guest-cleanup', {
+          method: 'POST',
+          keepalive: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+    };
+  }, [user]);
+
   if (!isAuthenticated) {
     return <Auth />;
   }

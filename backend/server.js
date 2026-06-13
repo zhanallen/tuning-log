@@ -4,7 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 // Import controller handlers
-import { googleLogin, developerLogin, authenticateToken, requireAdmin } from './src/controllers/authController.js';
+import { googleLogin, guestLogin, guestCleanup, authenticateToken, requireAdmin } from './src/controllers/authController.js';
 import {
   getVehicles,
   createVehicle,
@@ -57,7 +57,8 @@ app.use('/api/v1/models', express.static(UPLOAD_DIR));
 
 // Authentication Routes
 app.post('/api/v1/auth/google', googleLogin);
-app.post('/api/v1/auth/developer', developerLogin);
+app.post('/api/v1/auth/guest', guestLogin);
+app.post('/api/v1/auth/guest-cleanup', authenticateToken, guestCleanup);
 
 // Admin: upload a GLB model
 app.post('/api/v1/admin/models', authenticateToken, requireAdmin, uploadModelMiddleware, handleUploadError, uploadModel);

@@ -3,10 +3,9 @@ import { useStore } from '../store';
 import { ShieldAlert, Compass, Play } from 'lucide-react';
 
 export default function Auth() {
-  const { loginWithGoogle, loginDeveloper, authError, isLoading } = useStore();
-  const [devEmail, setDevEmail] = useState('driver@tuninglog.local');
-  const [devName, setDevName] = useState('Speedy Driver');
-  const [showDevForm, setShowDevForm] = useState(false);
+  const { loginWithGoogle, loginGuest, authError, isLoading } = useStore();
+  const [guestName, setGuestName] = useState('訪客賽車手');
+  const [showGuestForm, setShowGuestForm] = useState(false);
 
   useEffect(() => {
     // Check if Google GIS script is ready
@@ -34,9 +33,9 @@ export default function Auth() {
     initGoogleBtn();
   }, [loginWithGoogle]);
 
-  const handleDevSubmit = (e) => {
+  const handleGuestSubmit = (e) => {
     e.preventDefault();
-    loginDeveloper(devEmail, devName);
+    loginGuest(guestName);
   };
 
   return (
@@ -93,42 +92,32 @@ export default function Auth() {
             <span className="relative px-3 bg-surface text-xs font-mono text-outline uppercase">或</span>
           </div>
 
-          {/* Developer Mode Toggle */}
-          {!showDevForm ? (
+          {/* Guest Mode Toggle */}
+          {!showGuestForm ? (
             <button
-              onClick={() => setShowDevForm(true)}
+              onClick={() => setShowGuestForm(true)}
               className="w-full max-w-[320px] py-3 px-6 bg-surface-container hover:bg-surface-container-high border border-outline-variant/50 text-secondary font-display font-medium text-sm rounded transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
             >
               <Compass size={16} />
-              測試環境訪客登入 (Bypass)
+              進入訪客模式 (Guest)
             </button>
           ) : (
-            <form onSubmit={handleDevSubmit} className="w-full space-y-4 max-w-[320px]">
-              <div className="text-xs text-on-surface-variant text-center font-mono">測試帳號設定</div>
+            <form onSubmit={handleGuestSubmit} className="w-full space-y-4 max-w-[320px]">
+              <div className="text-xs text-on-surface-variant text-center font-mono">匿名帳戶設定</div>
               <div>
                 <label className="block text-xs font-mono text-outline mb-1">駕駛員姓名</label>
                 <input
                   type="text"
                   required
-                  value={devName}
-                  onChange={(e) => setDevName(e.target.value)}
-                  className="w-full bg-surface border border-outline-variant/50 focus:border-primary-container p-2 rounded text-sm text-on-surface focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-mono text-outline mb-1">電子信箱</label>
-                <input
-                  type="email"
-                  required
-                  value={devEmail}
-                  onChange={(e) => setDevEmail(e.target.value)}
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
                   className="w-full bg-surface border border-outline-variant/50 focus:border-primary-container p-2 rounded text-sm text-on-surface focus:outline-none"
                 />
               </div>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowDevForm(false)}
+                  onClick={() => setShowGuestForm(false)}
                   className="w-1/3 py-2 border border-outline-variant/50 text-xs text-on-surface-variant hover:bg-surface-container rounded"
                 >
                   返回

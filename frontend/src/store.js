@@ -124,12 +124,12 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  loginDeveloper: async (email = 'developer@tuninglog.local', name = '開發測試工程師') => {
+  loginGuest: async (name = '訪客') => {
     set({ isLoading: true, authError: null });
     try {
-      const data = await get().apiFetch('/auth/developer', {
+      const data = await get().apiFetch('/auth/guest', {
         method: 'POST',
-        body: JSON.stringify({ email, name })
+        body: JSON.stringify({ name })
       });
       localStorage.setItem('token', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
@@ -145,7 +145,15 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  logout: () => {
+  logout: async () => {
+    const user = get().user;
+    if (user && user.email && user.email.startsWith('guest_')) {
+      try {
+        await get().apiFetch('/auth/guest-cleanup', { method: 'POST' });
+      } catch (err) {
+        console.error('Guest active cleanup failed on logout:', err);
+      }
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     set({ 

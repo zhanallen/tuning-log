@@ -1,6 +1,7 @@
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -113,24 +114,25 @@ export async function googleLogin(req, res) {
   }
 }
 
-// Developer Bypass Login controller
-export async function developerLogin(req, res) {
-  const { email, name } = req.body;
-  const devEmail = email || 'developer@tuninglog.local';
-  const devName = name || '開發測試工程師';
-  const mockGoogleId = `dev-bypass-${devEmail}`;
+// Guest Login controller
+export async function guestLogin(req, res) {
+  const { name } = req.body;
+  const guestName = name || 'Anonymous Racer';
+  
+  // Generate random UUID for unique identification
+  const uuid = crypto.randomUUID();
+  const guestEmail = `guest_${uuid}@tuninglog.local`;
+  const guestGoogleId = `guest_${uuid}`;
 
   try {
-    // Find or create developer bypass user, assigning role from the admin allow-list
-    const role = resolveRole(devEmail);
-    let user = await prisma.user.upsert({
-      where: { email: devEmail },
-      update: { name: devName, role },
-      create: {
-        googleId: mockGoogleId,
-        email: devEmail,
-        name: devName,
-        role,
+    // Guest role is always "user"
+    const role = 'user';
+    let user = await prisma.user.create({
+      data: {
+        googleId: guestGoogleId,
+        email: guestEmail,
+        name: guestName,
+        role: role,
       },
     });
 
@@ -162,10 +164,71 @@ export async function developerLogin(req, res) {
       },
     });
   } catch (err) {
-    console.error('Developer login failed:', err);
+    console.error('Guest login failed:', err);
     return res.status(500).json({
       status: 'error',
-      message: '測試帳號登入系統異常，請聯絡系統管理員',
+      message: '訪客登入系統異常，請聯絡系統管理員',
     });
   }
 }
+
+// Guest Cleanup controller
+export async function guestCleanup(req, res) {
+  const user = req.user; // populated by authenticateToken middleware
+  
+  if (!user || !user.email || !user.email.startsWith('guest_')) {
+    return res.status(400).json({ status: 'error', message: '無效的訪客清理請求' });
+  }
+
+  try {
+    console.log(`[Guest Cleanup] Active request: Purging guest user ${user.email} (${user.userId})...`);
+    // Delete guest user from the database. Cascade delete will clean up vehicles/logs/values.
+    await prisma.user.delete({
+      where: { id: user.userId }
+    });
+
+    // Clear session token cookie
+    res.clearCookie('token');
+
+    return res.status(200).json({
+      status: 'success',
+      message: '訪客資料已成功清理',
+    });
+  } catch (err) {
+    console.error('Guest active cleanup failed:', err);
+    return res.status(500).json({
+      status: 'error',
+      message: '清理訪客資料時發生錯誤',
+    });
+  }
+}
+
+// Automatically clean up expired guest users (older than 2 hours) every 15 minutes
+setInterval(async () => {
+  try {
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const expiredGuests = await prisma.user.findMany({
+      where: {
+        email: {
+          startsWith: 'guest_'
+        },
+        createdAt: {
+          lt: twoHoursAgo
+        }
+      }
+    });
+
+    if (expiredGuests.length > 0) {
+      console.log(`[Scheduled Guest Cleanup] Found ${expiredGuests.length} expired guest sessions. Purging...`);
+      for (const guest of expiredGuests) {
+        await prisma.user.delete({
+          where: { id: guest.id }
+        });
+      }
+      console.log(`[Scheduled Guest Cleanup] Purge complete.`);
+    }
+  } catch (err) {
+    console.error('Error during scheduled guest cleanup:', err);
+  }
+}, 15 * 60 * 1000); // Every 15 minutes
+
