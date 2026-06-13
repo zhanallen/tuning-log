@@ -23,6 +23,9 @@ export default function LogHistory() {
   // Expansion states
   const [expandedLogs, setExpandedLogs] = useState({});
 
+  // Input mode UX state (prioritize presets, manual as fallback)
+  const [isManualTrack, setIsManualTrack] = useState(false);
+
   // Preset Modal states
   const [showPresetModal, setShowPresetModal] = useState(false);
   const [activePresetCountry, setActivePresetCountry] = useState('台灣 🇹🇼');
@@ -94,6 +97,7 @@ export default function LogHistory() {
         setNotes('');
         setTrackName('');
         setTrackLayout('');
+        setIsManualTrack(false);
         setValidationError(false);
         setTimeout(() => setSuccessMsg(''), 3000);
       }
@@ -229,47 +233,74 @@ export default function LogHistory() {
             <div className="absolute top-0 left-0 w-full h-[1px] bg-primary-container"></div>
             <h3 className="text-sm font-mono font-bold text-primary uppercase tracking-wider">[ 儲存當前設定日誌 ]</h3>
             
-            <div className="grid grid-cols-2 gap-3">
+            {/* Prioritized track selector UX layout */}
+            {!isManualTrack ? (
               <div>
-                <label className="block text-xs font-mono text-outline mb-1 flex justify-between items-center">
-                  <span>賽道名稱</span>
+                <label className="block text-xs font-mono text-outline mb-1">選擇賽道設定</label>
+                <div 
+                  onClick={() => setShowPresetModal(true)}
+                  className="w-full bg-surface border border-outline-variant/50 hover:border-primary p-2.5 rounded text-sm text-on-surface font-mono cursor-pointer flex justify-between items-center h-10 select-none transition-all"
+                >
+                  <span className={trackName ? "text-on-surface" : "text-outline/40"}>
+                    {trackName ? `${trackName}${trackLayout ? ` (${trackLayout})` : ''}` : "🏁 點擊選擇預設賽道..."}
+                  </span>
+                  <ChevronDown size={14} className="text-outline/60" />
+                </div>
+                <div className="flex justify-between items-center mt-1">
                   <button
                     type="button"
-                    onClick={() => setShowPresetModal(true)}
-                    className="text-[10px] text-primary hover:underline font-mono flex items-center gap-0.5"
+                    onClick={() => setIsManualTrack(true)}
+                    className="text-[10px] text-primary hover:underline font-mono"
                   >
-                    🏁 預設
+                    ✍️ 手動編輯或輸入自訂賽道...
                   </button>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={trackName}
-                  onChange={(e) => setTrackName(e.target.value)}
-                  placeholder="如: 麗寶國際賽車場"
-                  list="tracks-datalist"
-                  className="w-full bg-surface border border-outline-variant/50 focus:border-primary-container p-2 rounded text-sm text-on-surface font-mono focus:outline-none"
-                />
-                <datalist id="tracks-datalist">
-                  {existingTracks.map(t => <option key={t} value={t} />)}
-                </datalist>
+                </div>
               </div>
-
+            ) : (
               <div>
-                <label className="block text-xs font-mono text-outline mb-1">佈局 / 方向 (選填)</label>
-                <input
-                  type="text"
-                  value={trackLayout}
-                  onChange={(e) => setTrackLayout(e.target.value)}
-                  placeholder="如: 23彎全賽道"
-                  list="layouts-datalist"
-                  className="w-full bg-surface border border-outline-variant/50 focus:border-primary-container p-2 rounded text-sm text-on-surface font-mono focus:outline-none"
-                />
-                <datalist id="layouts-datalist">
-                  {existingLayouts.map(l => <option key={l} value={l} />)}
-                </datalist>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-mono text-outline mb-1">賽道名稱</label>
+                    <input
+                      type="text"
+                      required
+                      value={trackName}
+                      onChange={(e) => setTrackName(e.target.value)}
+                      placeholder="如: 麗寶國際賽車場"
+                      list="tracks-datalist"
+                      className="w-full bg-surface border border-outline-variant/50 focus:border-primary-container p-2 rounded text-sm text-on-surface font-mono focus:outline-none"
+                    />
+                    <datalist id="tracks-datalist">
+                      {existingTracks.map(t => <option key={t} value={t} />)}
+                    </datalist>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono text-outline mb-1">佈局 / 方向 (選填)</label>
+                    <input
+                      type="text"
+                      value={trackLayout}
+                      onChange={(e) => setTrackLayout(e.target.value)}
+                      placeholder="如: 23彎全賽道"
+                      list="layouts-datalist"
+                      className="w-full bg-surface border border-outline-variant/50 focus:border-primary-container p-2 rounded text-sm text-on-surface font-mono focus:outline-none"
+                    />
+                    <datalist id="layouts-datalist">
+                      {existingLayouts.map(l => <option key={l} value={l} />)}
+                    </datalist>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsManualTrack(false)}
+                    className="text-[10px] text-primary hover:underline font-mono"
+                  >
+                    🏁 切換回選擇預設賽道
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             <div>
               <label className="block text-xs font-mono text-outline mb-1">本圈單圈成績</label>
@@ -527,7 +558,19 @@ export default function LogHistory() {
             
             <header className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-lg font-bold font-display text-on-surface">🏁 選擇預設賽道</h3>
+                <h3 className="text-lg font-bold font-display text-on-surface flex items-center gap-2">
+                  <span>🏁 選擇預設賽道</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsManualTrack(true);
+                      setShowPresetModal(false);
+                    }}
+                    className="text-[10px] text-primary border border-primary/30 hover:bg-primary/10 px-2.5 py-0.5 rounded font-mono transition-colors"
+                  >
+                    ✍️ 直接手動輸入
+                  </button>
+                </h3>
                 <p className="text-xs text-outline font-mono mt-0.5">請先選擇國家，再帶入對應賽道名稱及佈局項目</p>
               </div>
               <button
