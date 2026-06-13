@@ -106,7 +106,7 @@ export default function App() {
               onClick={() => setActiveView('tuning')}
               className="font-display text-xl font-bold text-primary tracking-tighter cursor-pointer flex items-center gap-2"
             >
-              Tun<span className="text-primary-container">ing log</span>
+              <span>Tun<span className="text-primary-container">ing log</span></span>
               <span className="text-on-surface text-sm font-semibold border-l border-outline-variant/30 pl-2">調車日誌</span>
             </div>
             
