@@ -28,6 +28,32 @@ function escapeHTML(str) {
     .replace(/'/g, '&#x27;');
 }
 
+// Helper to parse and normalize flexible lap times (e.g., 1:23.493 or 23.49 -> 01:23.493)
+function parseAndNormalizeLapTime(timeStr) {
+  if (!timeStr) return null;
+  const trimmed = timeStr.trim();
+  const regex = /^(?:(\d+):)?(\d+)(?:\.(\d+))?$/;
+  const match = trimmed.match(regex);
+  if (!match) return null;
+
+  let mins = match[1] ? parseInt(match[1], 10) : 0;
+  let secs = parseInt(match[2], 10);
+  let msStr = match[3] || '000';
+
+  if (secs >= 60) {
+    mins += Math.floor(secs / 60);
+    secs = secs % 60;
+  }
+
+  if (mins > 59) return null;
+
+  const minsFormatted = String(mins).padStart(2, '0');
+  const secsFormatted = String(secs).padStart(2, '0');
+  const msFormatted = msStr.padEnd(3, '0').slice(0, 3);
+
+  return `${minsFormatted}:${secsFormatted}.${msFormatted}`;
+}
+
 // Helper to translate camelCase Database fields to snake_case for Frontend compatibility
 function formatVehicle(v) {
   if (!v) return null;
@@ -363,12 +389,12 @@ export async function createLog(req, res) {
   const userId = req.user.userId;
   const { vehicle_id, lap_time, feedback_notes, params } = req.body;
 
-  // Validate lap time format (REQ-SW-017)
-  const lapTimeRegex = /^([0-5][0-9]):([0-5][0-9])\.([0-9]{3})$/;
-  if (!lap_time || !lapTimeRegex.test(lap_time)) {
+  // Validate and normalize lap time format (REQ-SW-017)
+  const normalizedLapTime = parseAndNormalizeLapTime(lap_time);
+  if (!normalizedLapTime) {
     return res.status(400).json({ 
       status: 'error', 
-      message: '單圈時間格式不正確，格式需為 分分:秒秒.毫秒 (例如: 01:25.450)' 
+      message: '單圈時間格式不正確，格式需為 分分:秒秒.毫秒 (例如: 01:25.450 或 1:25.450)' 
     });
   }
 
@@ -390,7 +416,7 @@ export async function createLog(req, res) {
         data: {
           userId,
           vehicleId: vehicle_id,
-          lapTime: lap_time,
+          lapTime: normalizedLapTime,
           feedbackNotes: safeFeedbackNotes
         }
       });

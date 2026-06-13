@@ -13,10 +13,34 @@ export default function LogHistory() {
   const [validationError, setValidationError] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Validate format: MM:SS.SSS (e.g., 01:25.450)
+  // Parse and normalize flexible input format (e.g., 1:23.493 or 23.49 -> 01:23.493 or 00:23.490)
+  const parseAndNormalizeLapTime = (timeStr) => {
+    if (!timeStr) return null;
+    const trimmed = timeStr.trim();
+    const regex = /^(?:(\d+):)?(\d+)(?:\.(\d+))?$/;
+    const match = trimmed.match(regex);
+    if (!match) return null;
+
+    let mins = match[1] ? parseInt(match[1], 10) : 0;
+    let secs = parseInt(match[2], 10);
+    let msStr = match[3] || '000';
+
+    if (secs >= 60) {
+      mins += Math.floor(secs / 60);
+      secs = secs % 60;
+    }
+
+    if (mins > 59) return null;
+
+    const minsFormatted = String(mins).padStart(2, '0');
+    const secsFormatted = String(secs).padStart(2, '0');
+    const msFormatted = msStr.padEnd(3, '0').slice(0, 3);
+
+    return `${minsFormatted}:${secsFormatted}.${msFormatted}`;
+  };
+
   const validateLapTime = (timeStr) => {
-    const regex = /^([0-5][0-9]):([0-5][0-9])\.([0-9]{3})$/;
-    return regex.test(timeStr);
+    return parseAndNormalizeLapTime(timeStr) !== null;
   };
 
   const handleLapTimeChange = (e) => {
@@ -29,18 +53,27 @@ export default function LogHistory() {
     }
   };
 
+  const handleLapTimeBlur = () => {
+    const normalized = parseAndNormalizeLapTime(lapTime);
+    if (normalized) {
+      setLapTime(normalized);
+      setValidationError(false);
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!validateLapTime(lapTime)) {
-      setErrorMsg('單圈時間格式不正確！必須為 分分:秒秒.毫秒 (例如: 01:24.450)');
+    const normalized = parseAndNormalizeLapTime(lapTime);
+    if (!normalized) {
+      setErrorMsg('單圈時間格式不正確！可輸入 分:秒.毫秒 (例如: 1:23.493 或 01:23.493)');
       return;
     }
 
     try {
-      const success = await saveLog(lapTime, notes);
+      const success = await saveLog(normalized, notes);
       if (success) {
         setSuccessMsg('日誌儲存成功！');
         setLapTime('');
@@ -152,13 +185,14 @@ export default function LogHistory() {
                 required
                 value={lapTime}
                 onChange={handleLapTimeChange}
-                placeholder="格式如 01:25.450"
+                onBlur={handleLapTimeBlur}
+                placeholder="例如: 1:23.493 或 85.24"
                 className={`w-full bg-surface border p-2 rounded text-sm text-on-surface font-mono focus:outline-none ${
                   validationError ? 'border-error focus:border-error' : 'border-outline-variant/50 focus:border-primary-container'
                 }`}
               />
               <p className="text-[10px] text-outline/60 mt-1 font-mono">
-                格式要求: `分分:秒秒.毫秒`
+                格式要求: `分:秒.毫秒` (送出或移開焦點時會自動補零對齊)
               </p>
             </div>
 
