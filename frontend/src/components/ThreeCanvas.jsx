@@ -333,9 +333,7 @@ function HotspotElement({ spot, isSelected, currentVal, config, isAero, setActiv
 // slow networks see clear progress instead of an empty/black canvas and assume
 // the page froze. Driven by drei's useProgress (THREE's DefaultLoadingManager),
 // which also re-fires whenever a different vehicle's model starts loading.
-function ModelLoadingOverlay({ vehicleName }) {
-  const { active, progress } = useProgress();
-
+function ModelLoadingOverlay({ vehicleName, active, progress }) {
   return (
     <div
       className={`absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-[#1a1c1e] to-[#0c0e10] transition-opacity duration-500 ${
@@ -370,8 +368,56 @@ function ModelLoadingOverlay({ vehicleName }) {
 
 export default function ThreeCanvas() {
   const { currentVehicle, activePartKey, setActivePartKey, currentParams } = useStore();
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  useEffect(() => {
+    if (!currentVehicle || !currentVehicle.model_path) return;
+
+    const url = currentVehicle.model_path;
+    setIsDownloading(true);
+    setDownloadProgress(0);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'blob';
+
+    xhr.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = (event.loaded / event.total) * 100;
+        setDownloadProgress(percentComplete);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        setDownloadProgress(100);
+        const timer = setTimeout(() => {
+          setIsDownloading(false);
+        }, 300);
+        return () => clearTimeout(timer);
+      } else {
+        setIsDownloading(false);
+      }
+    };
+
+    xhr.onerror = () => {
+      setIsDownloading(false);
+    };
+
+    xhr.send();
+
+    return () => {
+      xhr.abort();
+    };
+  }, [currentVehicle?.model_path]);
+
+  const { active: dreiActive, progress: dreiProgress } = useProgress();
 
   if (!currentVehicle) return null;
+
+  const isActive = isDownloading || dreiActive;
+  const currentProgress = isDownloading ? downloadProgress : dreiProgress;
 
   // Read scale multiplier directly from current vehicle
   const scaleMultiplier = currentVehicle.model_scale !== undefined ? currentVehicle.model_scale : 1.0;
@@ -456,7 +502,7 @@ export default function ThreeCanvas() {
         <CameraController activePartKey={activePartKey} />
       </Canvas>
 
-      <ModelLoadingOverlay vehicleName={currentVehicle.name} />
+      <ModelLoadingOverlay vehicleName={currentVehicle.name} active={isActive} progress={currentProgress} />
     </div>
   );
 }
