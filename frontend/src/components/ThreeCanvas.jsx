@@ -370,11 +370,14 @@ export default function ThreeCanvas() {
   const { currentVehicle, activePartKey, setActivePartKey, currentParams } = useStore();
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [renderedModelPath, setRenderedModelPath] = useState(null);
 
   useEffect(() => {
     if (!currentVehicle || !currentVehicle.model_path) return;
 
     const url = currentVehicle.model_path;
+    if (renderedModelPath === url) return;
+
     setIsDownloading(true);
     setDownloadProgress(0);
 
@@ -392,17 +395,20 @@ export default function ThreeCanvas() {
     xhr.onload = () => {
       if (xhr.status === 200) {
         setDownloadProgress(100);
+        setRenderedModelPath(url);
         const timer = setTimeout(() => {
           setIsDownloading(false);
         }, 300);
         return () => clearTimeout(timer);
       } else {
         setIsDownloading(false);
+        setRenderedModelPath(url);
       }
     };
 
     xhr.onerror = () => {
       setIsDownloading(false);
+      setRenderedModelPath(url);
     };
 
     xhr.send();
@@ -466,10 +472,12 @@ export default function ThreeCanvas() {
         <pointLight position={[0, -2, 0]} intensity={0.3} color="#ffb59a" />
 
         <Suspense fallback={null}>
-          <CarModel modelPath={currentVehicle.model_path} activePartKey={activePartKey} />
+          {renderedModelPath && (
+            <CarModel modelPath={renderedModelPath} activePartKey={activePartKey} />
+          )}
 
-          {/* Render Hotspots */}
-          {activeHotspots.map((spot) => {
+          {/* Render Hotspots - Only show when downloading has finished and the rendered path matches */}
+          {!isDownloading && renderedModelPath === currentVehicle.model_path && activeHotspots.map((spot) => {
             const isSelected = activePartKey === spot.key;
             const config = PARAM_CONFIGS[spot.key];
             const currentVal = currentParams[spot.key] !== undefined 
