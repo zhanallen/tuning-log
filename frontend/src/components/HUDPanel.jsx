@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore, PARAM_CONFIGS } from '../store';
 import { X, ShieldAlert, Wind, Sun, SlidersHorizontal } from 'lucide-react';
 
-export default function HUDPanel() {
+export default function HUDPanel({ showStats }) {
   const { activePartKey, setActivePartKey, currentParams, updateParam, currentVehicle } = useStore();
 
   if (!activePartKey || !currentVehicle) return null;
@@ -44,7 +44,11 @@ export default function HUDPanel() {
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 w-full h-[55%] max-h-[55%] md:top-4 md:right-4 md:left-auto md:bottom-auto md:w-80 md:h-auto md:max-h-[calc(100%-6rem)] z-45 rounded-t-2xl md:rounded-lg border-t md:border border-white/10 bg-surface-container/20 backdrop-blur-lg p-5 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] md:shadow-[0_0_30px_rgba(255,92,0,0.25)] flex flex-col group overflow-hidden">
+    <div className={`absolute bottom-0 left-0 right-0 w-full h-[55%] max-h-[55%] md:right-4 md:left-auto md:bottom-auto md:w-80 md:h-auto z-45 rounded-t-2xl md:rounded-lg border-t md:border border-white/10 bg-surface-container/20 backdrop-blur-lg p-5 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] md:shadow-[0_0_30px_rgba(255,92,0,0.25)] flex flex-col group overflow-hidden transition-all duration-500 ease-out ${
+      showStats 
+        ? 'md:top-[104px] md:max-h-[calc(100%-8rem)]' 
+        : 'md:top-16 md:max-h-[calc(100%-6rem)]'
+    }`}>
       
       {/* Drag handle for mobile bottom sheet */}
       <div className="md:hidden w-12 h-1 bg-white/20 rounded-full mx-auto mb-2 flex-shrink-0"></div>

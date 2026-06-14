@@ -777,7 +777,7 @@ export default function App() {
                   <ThreeCanvas />
                   
                   {/* Floating HUD Panel */}
-                  <HUDPanel />
+                  <HUDPanel showStats={showStats} />
                 </>
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center space-y-4 text-on-surface-variant font-mono text-sm">
