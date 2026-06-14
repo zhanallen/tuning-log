@@ -293,14 +293,14 @@ export default function App() {
 
                   {/* Engineering Admin Control Panel */}
                   {isAdminMode && isAdmin && (
-                    <div className="absolute bottom-0 left-0 right-0 w-full h-[55%] max-h-[55%] md:top-14 md:left-4 md:right-auto md:bottom-auto md:w-80 md:h-auto md:max-h-[calc(100%-8rem)] z-40 rounded-t-2xl md:rounded-lg border-t md:border border-secondary-container/60 bg-background/95 backdrop-blur-xl p-4 shadow-[0_-4px_30px_rgba(0,0,0,0.5)] md:shadow-[0_0_25px_rgba(0,227,253,0.2)] flex flex-col overflow-hidden transition-all duration-300">
+                    <div className="absolute bottom-0 left-0 right-0 w-full h-[55%] max-h-[55%] md:top-14 md:left-4 md:right-auto md:bottom-auto md:w-80 md:h-auto md:max-h-[calc(100%-8rem)] z-40 rounded-t-2xl md:rounded-lg border-t md:border border-white/10 bg-surface-container/20 backdrop-blur-lg p-4 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] md:shadow-[0_0_25px_rgba(0,227,253,0.2)] flex flex-col overflow-hidden transition-all duration-300">
                       {/* Drag handle for mobile bottom sheet */}
-                      <div className="md:hidden w-12 h-1 bg-outline-variant/40 rounded-full mx-auto mb-2 flex-shrink-0"></div>
+                      <div className="md:hidden w-12 h-1 bg-white/20 rounded-full mx-auto mb-2 flex-shrink-0"></div>
                       
                       {/* Cyan top indicator bar */}
                       <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-secondary-container to-transparent hidden md:block"></div>
                       
-                      <header className="flex justify-between items-center mb-3 pb-1.5 border-b border-outline-variant/30 flex-shrink-0">
+                      <header className="flex justify-between items-center mb-3 pb-1.5 border-b border-white/10 flex-shrink-0">
                         <h4 className="font-display text-xs font-bold text-on-surface flex items-center gap-1.5">
                           <ShieldAlert className="text-secondary-container animate-pulse" size={14} />
                           工程管理員校準台
@@ -311,7 +311,7 @@ export default function App() {
                       </header>
 
                       {/* Admin Tab Selector */}
-                      <div className="flex border-b border-outline-variant/20 mb-3.5 text-[10px] font-display font-bold flex-shrink-0">
+                      <div className="flex border-b border-white/10 mb-3.5 text-[10px] font-display font-bold flex-shrink-0">
                         <button
                           onClick={() => setAdminTab('scale')}
                           className={`flex-1 pb-1.5 text-center border-b ${adminTab === 'scale' ? 'text-secondary-container border-secondary-container' : 'text-outline/60 border-transparent hover:text-outline'}`}

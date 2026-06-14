@@ -301,10 +301,10 @@ function HotspotElement({ spot, isSelected, currentVal, config, isAero, setActiv
         onMouseLeave={() => setHovered(false)}
       >
         {/* Floating value tag on hover or selection (with z-10 to stay on top of the dot within same context) */}
-        <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-0.5 rounded border text-[9px] font-mono whitespace-nowrap transition-all duration-200 z-10 ${
+        <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 rounded border text-[9px] font-mono whitespace-nowrap transition-all duration-200 z-10 backdrop-blur-md ${
           isSelected
-            ? 'bg-primary-container text-white border-primary-container scale-105 shadow-[0_0_8px_#ff5c00]'
-            : 'bg-background/90 text-outline border-outline-variant/50 opacity-0 group-hover:opacity-100'
+            ? 'bg-primary-container/85 text-white border-primary-container/60 scale-105 shadow-[0_0_8px_rgba(255,92,0,0.4)]'
+            : 'bg-surface-container/30 text-outline border-white/10 opacity-0 group-hover:opacity-100'
         }`}>
           {spot.name}: <span className="font-bold">{currentVal}{config?.unit}</span>
         </div>
