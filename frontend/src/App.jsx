@@ -795,7 +795,7 @@ export default function App() {
               {/* Floating action bar — overlays the bottom of the 3D preview so it
                   no longer takes a layout row (removes the blank area below) and
                   doesn't crowd the side HUD panels. */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-sm sm:max-w-md">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] sm:w-fit max-w-sm sm:max-w-none">
                 <div className="flex items-center justify-between sm:justify-start gap-1 sm:gap-2 bg-background/80 backdrop-blur-xl border border-primary-container/40 p-1 sm:p-1.5 rounded-full shadow-[0_0_30px_rgba(0,0,0,0.8)]">
                   <button
                     onClick={() => {
