@@ -190,17 +190,17 @@ export default function LogHistory() {
       )}
 
       {/* Header controls */}
-      <header className="flex justify-between items-center pb-4 border-b border-outline-variant/30 flex-wrap gap-4">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-outline-variant/30">
         <div>
           <h2 className="font-display text-2xl font-bold text-on-surface">調校與單圈日誌</h2>
           <p className="text-xs font-mono text-outline uppercase mt-1">
             [ 當前車輛: {currentVehicle.name} ]
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={exportBackup}
-            className="flex items-center gap-1.5 border border-outline-variant hover:border-primary text-xs font-display px-3 py-2 rounded hover:bg-surface-container text-on-surface transition-all"
+            className="flex items-center gap-1.5 border border-outline-variant hover:border-primary text-xs font-display px-3 py-2 rounded hover:bg-surface-container text-on-surface transition-all animate-none"
             title="下載所有車輛與設定備份"
           >
             <FileDown size={14} />

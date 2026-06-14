@@ -82,12 +82,12 @@ export default function Garage() {
 
   return (
     <div className="flex-1 overflow-y-auto p-6 max-w-5xl mx-auto w-full space-y-6">
-      <header className="flex justify-between items-center pb-4 border-b border-outline-variant/30">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-outline-variant/30">
         <div>
           <h2 className="font-display text-2xl font-bold text-on-surface">車庫管理 (Garage)</h2>
           <p className="text-xs font-mono text-outline uppercase mt-1">[ 管理你的個人車型底盤庫 ]</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {mode !== 'list' ? (
             <button
               onClick={() => setMode('list')}

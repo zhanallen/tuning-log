@@ -6,7 +6,7 @@ import LogHistory from './components/LogHistory';
 import ThreeCanvas from './components/ThreeCanvas';
 import HUDPanel from './components/HUDPanel';
 import CloudManager from './components/CloudManager';
-import { Car, History, Wrench, LogOut, Info, Settings, ShieldAlert, Save, RefreshCw, Cloud } from 'lucide-react';
+import { Car, History, Wrench, LogOut, Info, Settings, ShieldAlert, Save, RefreshCw, Cloud, ChevronUp, ChevronDown } from 'lucide-react';
 
 export default function App() {
   const { 
@@ -35,6 +35,7 @@ export default function App() {
   const [isSymmetric, setIsSymmetric] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
+  const [showStats, setShowStats] = useState(true);
 
   const handleSaveConfig = async () => {
     if (!currentVehicle) return;
@@ -180,9 +181,9 @@ export default function App() {
 
             {/* User Profile and Sign Out */}
             {user && (
-              <div className="flex items-center gap-3 bg-surface-container/60 border border-outline-variant/20 px-3 py-1.5 rounded-full font-mono text-xs">
-                <span className="text-outline">DRV:</span>
-                <span className="text-on-surface font-semibold max-w-[100px] truncate" title={user.displayName}>
+              <div className="flex items-center gap-2 sm:gap-3 bg-surface-container/60 border border-outline-variant/20 px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-full font-mono text-xs">
+                <span className="text-outline hidden sm:inline">DRV:</span>
+                <span className="text-on-surface font-semibold max-w-[70px] sm:max-w-[100px] truncate" title={user.displayName}>
                   {user.displayName}
                 </span>
                 <button
@@ -205,47 +206,8 @@ export default function App() {
         {activeView === 'cloud' && isAdmin && <CloudManager />}
 
         {activeView === 'tuning' && (
-          <div className="flex-1 flex flex-col p-6 space-y-6 overflow-hidden h-full max-w-container-max mx-auto w-full">
+          <div className="flex-1 flex flex-col p-6 overflow-hidden h-full max-w-container-max mx-auto w-full">
             
-            {/* Top Stat Cards Grid */}
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
-              {/* HP Stat */}
-              <div className="bg-surface-container border border-outline-variant/30 rounded p-4 relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
-                <div className="font-mono text-[10px] text-outline uppercase tracking-wider mb-1">[ 馬力輸出 / POWER ]</div>
-                <div className="flex items-baseline gap-1.5 mt-2">
-                  <span className="font-display text-3xl font-bold text-on-surface">
-                    {currentVehicle ? currentVehicle.horsepower_hp : '---'}
-                  </span>
-                  <span className="font-display text-sm text-primary font-bold">HP</span>
-                </div>
-              </div>
-
-              {/* Torque Stat */}
-              <div className="bg-surface-container border border-outline-variant/30 rounded p-4 relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-secondary to-transparent opacity-50"></div>
-                <div className="font-mono text-[10px] text-outline uppercase tracking-wider mb-1">[ 扭力輸出 / TORQUE ]</div>
-                <div className="flex items-baseline gap-1.5 mt-2">
-                  <span className="font-display text-3xl font-bold text-on-surface">
-                    {currentVehicle ? currentVehicle.torque_nm : '---'}
-                  </span>
-                  <span className="font-display text-sm text-secondary font-bold">Nm</span>
-                </div>
-              </div>
-
-              {/* Weight Stat */}
-              <div className="bg-surface-container border border-outline-variant/30 rounded p-4 relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-tertiary to-transparent opacity-50"></div>
-                <div className="font-mono text-[10px] text-outline uppercase tracking-wider mb-1">[ 當前車重 / WEIGHT ]</div>
-                <div className="flex items-baseline gap-1.5 mt-2">
-                  <span className="font-display text-3xl font-bold text-on-surface">
-                    {currentVehicle ? currentVehicle.weight_kg : '---'}
-                  </span>
-                  <span className="font-display text-sm text-tertiary font-bold">kg</span>
-                </div>
-              </div>
-            </section>
-
             {/* Interactive 3D Model Schematic Window */}
             <div className="flex-1 bg-surface-container-low border border-outline-variant/30 rounded-lg relative overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.6)]">
               {/* Neon border highlight */}
@@ -257,11 +219,86 @@ export default function App() {
                     模型: {currentVehicle.name}
                   </div>
 
+                  {/* Floating Glassmorphism Stat Cards */}
+                  <div 
+                    className={`absolute z-30 bg-surface-container/20 backdrop-blur-lg border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] transition-all duration-500 ease-out flex items-center justify-center overflow-hidden select-none ${
+                      showStats 
+                        ? 'top-14 right-4 w-[calc(100%-2rem)] sm:w-[320px] md:w-[400px] h-14 md:h-16 rounded-xl p-1.5 md:top-4' 
+                        : 'top-4 right-4 w-9 h-9 rounded-full p-0 cursor-pointer hover:bg-white/10 text-outline hover:text-on-surface'
+                    }`}
+                    onClick={() => {
+                      if (!showStats) setShowStats(true);
+                    }}
+                    title={!showStats ? "顯示規格數據" : undefined}
+                  >
+                    {/* Stats Content - Fades out and scales down when collapsed */}
+                    <div className={`flex items-center gap-2 w-full h-full transition-all duration-300 ${
+                      showStats ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none absolute'
+                    }`}>
+                      <div className="grid grid-cols-3 gap-2 flex-1">
+                        {/* HP Stat */}
+                        <div className="bg-background/25 border border-white/5 rounded-lg p-1.5 md:p-2 text-center relative overflow-hidden">
+                          <div className="font-mono text-[7px] sm:text-[8px] md:text-[9px] text-outline uppercase truncate">馬力 / HP</div>
+                          <div className="flex items-baseline justify-center gap-0.5 mt-0.5">
+                            <span className="font-display text-xs sm:text-base md:text-lg font-bold text-on-surface">
+                              {currentVehicle ? currentVehicle.horsepower_hp : '---'}
+                            </span>
+                            <span className="font-display text-[8px] sm:text-[9px] md:text-[10px] text-primary font-bold">HP</span>
+                          </div>
+                        </div>
+
+                        {/* Torque Stat */}
+                        <div className="bg-background/25 border border-white/5 rounded-lg p-1.5 md:p-2 text-center relative overflow-hidden">
+                          <div className="font-mono text-[7px] sm:text-[8px] md:text-[9px] text-outline uppercase truncate">扭力 / TQ</div>
+                          <div className="flex items-baseline justify-center gap-0.5 mt-0.5">
+                            <span className="font-display text-xs sm:text-base md:text-lg font-bold text-on-surface">
+                              {currentVehicle ? currentVehicle.torque_nm : '---'}
+                            </span>
+                            <span className="font-display text-[8px] sm:text-[9px] md:text-[10px] text-secondary font-bold">Nm</span>
+                          </div>
+                        </div>
+
+                        {/* Weight Stat */}
+                        <div className="bg-background/25 border border-white/5 rounded-lg p-1.5 md:p-2 text-center relative overflow-hidden">
+                          <div className="font-mono text-[7px] sm:text-[8px] md:text-[9px] text-outline uppercase truncate">車重 / WT</div>
+                          <div className="flex items-baseline justify-center gap-0.5 mt-0.5">
+                            <span className="font-display text-xs sm:text-base md:text-lg font-bold text-on-surface">
+                              {currentVehicle ? currentVehicle.weight_kg : '---'}
+                            </span>
+                            <span className="font-display text-[8px] sm:text-[9px] md:text-[10px] text-tertiary font-bold">kg</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Collapse button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowStats(false);
+                        }}
+                        className="p-1 hover:bg-white/10 rounded-lg text-outline hover:text-on-surface transition-colors flex-shrink-0"
+                        title="收合數據"
+                      >
+                        <ChevronUp size={15} />
+                      </button>
+                    </div>
+
+                    {/* Small Icon when collapsed - Fades in and scales up when collapsed */}
+                    <div className={`flex items-center justify-center w-full h-full transition-all duration-300 ${
+                      !showStats ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-75 pointer-events-none absolute'
+                    }`}>
+                      <Info size={16} />
+                    </div>
+                  </div>
+
                   {/* Engineering Admin Control Panel */}
                   {isAdminMode && isAdmin && (
-                    <div className="absolute top-14 left-4 z-40 w-80 max-h-[calc(100%-8rem)] rounded-lg border border-secondary-container/60 bg-background/95 backdrop-blur-xl p-4 shadow-[0_0_25px_rgba(0,227,253,0.2)] flex flex-col overflow-hidden transition-all duration-300">
+                    <div className="absolute bottom-0 left-0 right-0 w-full h-[55%] max-h-[55%] md:top-14 md:left-4 md:right-auto md:bottom-auto md:w-80 md:h-auto md:max-h-[calc(100%-8rem)] z-40 rounded-t-2xl md:rounded-lg border-t md:border border-secondary-container/60 bg-background/95 backdrop-blur-xl p-4 shadow-[0_-4px_30px_rgba(0,0,0,0.5)] md:shadow-[0_0_25px_rgba(0,227,253,0.2)] flex flex-col overflow-hidden transition-all duration-300">
+                      {/* Drag handle for mobile bottom sheet */}
+                      <div className="md:hidden w-12 h-1 bg-outline-variant/40 rounded-full mx-auto mb-2 flex-shrink-0"></div>
+                      
                       {/* Cyan top indicator bar */}
-                      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-secondary-container to-transparent"></div>
+                      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-secondary-container to-transparent hidden md:block"></div>
                       
                       <header className="flex justify-between items-center mb-3 pb-1.5 border-b border-outline-variant/30 flex-shrink-0">
                         <h4 className="font-display text-xs font-bold text-on-surface flex items-center gap-1.5">
@@ -758,32 +795,32 @@ export default function App() {
               {/* Floating action bar — overlays the bottom of the 3D preview so it
                   no longer takes a layout row (removes the blank area below) and
                   doesn't crowd the side HUD panels. */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30">
-                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-xl border border-primary-container/40 p-1.5 rounded-full shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-sm sm:max-w-md">
+                <div className="flex items-center justify-between sm:justify-start gap-1 sm:gap-2 bg-background/80 backdrop-blur-xl border border-primary-container/40 p-1 sm:p-1.5 rounded-full shadow-[0_0_30px_rgba(0,0,0,0.8)]">
                   <button
                     onClick={() => {
                       if (currentVehicle) setActiveView('logs');
                     }}
-                    className="bg-primary-container text-white font-display text-xs font-bold px-6 py-2.5 rounded-full hover:bg-primary-container/80 transition-all shadow-[0_0_15px_rgba(255,92,0,0.3)]"
+                    className="bg-primary-container text-white font-display text-[11px] sm:text-xs font-bold px-4 py-2 sm:px-6 sm:py-2.5 rounded-full hover:bg-primary-container/80 transition-all shadow-[0_0_15px_rgba(255,92,0,0.3)] truncate flex-1 sm:flex-none text-center"
                   >
                     儲存當前設定
                   </button>
-                  <div className="w-px h-5 bg-outline-variant/30 mx-2"></div>
+                  <div className="w-px h-5 bg-outline-variant/30 mx-1 sm:mx-2"></div>
 
                   <button
                     onClick={() => setActiveView('garage')}
-                    className="flex items-center justify-center gap-1.5 text-on-surface-variant font-display text-xs font-semibold px-4 py-2 hover:text-primary-container transition-colors rounded-full"
+                    className="flex items-center justify-center gap-1 sm:gap-1.5 text-on-surface-variant font-display text-[11px] sm:text-xs font-semibold px-2.5 py-2 hover:text-primary-container transition-colors rounded-full"
                   >
                     <Car size={13} />
-                    車庫
+                    <span>車庫</span>
                   </button>
 
                   <button
                     onClick={() => alert('已連線 3D 底盤診斷系統: 狀態良好')}
-                    className="flex items-center justify-center gap-1.5 text-on-surface-variant font-display text-xs font-semibold px-4 py-2 hover:text-primary-container transition-colors rounded-full"
+                    className="flex items-center justify-center gap-1 sm:gap-1.5 text-on-surface-variant font-display text-[11px] sm:text-xs font-semibold px-2.5 py-2 hover:text-primary-container transition-colors rounded-full"
                   >
                     <Settings size={13} />
-                    底盤診斷
+                    <span><span className="hidden sm:inline">底盤</span>診斷</span>
                   </button>
                 </div>
               </div>
@@ -796,25 +833,34 @@ export default function App() {
       <footer className="md:hidden flex-shrink-0 bg-surface-container border-t border-outline-variant/30 h-16 flex items-center justify-around z-50">
         <button 
           onClick={() => setActiveView('garage')}
-          className={`flex flex-col items-center gap-1 text-[10px] font-mono ${activeView === 'garage' ? 'text-primary' : 'text-outline'}`}
+          className={`flex flex-col items-center justify-center gap-1 text-[10px] font-mono w-full h-full ${activeView === 'garage' ? 'text-primary' : 'text-outline'}`}
         >
           <Car size={18} />
           車庫
         </button>
         <button 
           onClick={() => setActiveView('tuning')}
-          className={`flex flex-col items-center gap-1 text-[10px] font-mono ${activeView === 'tuning' ? 'text-primary' : 'text-outline'}`}
+          className={`flex flex-col items-center justify-center gap-1 text-[10px] font-mono w-full h-full ${activeView === 'tuning' ? 'text-primary' : 'text-outline'}`}
         >
           <Wrench size={18} />
           調校
         </button>
         <button 
           onClick={() => setActiveView('logs')}
-          className={`flex flex-col items-center gap-1 text-[10px] font-mono ${activeView === 'logs' ? 'text-primary' : 'text-outline'}`}
+          className={`flex flex-col items-center justify-center gap-1 text-[10px] font-mono w-full h-full ${activeView === 'logs' ? 'text-primary' : 'text-outline'}`}
         >
           <History size={18} />
           日誌
         </button>
+        {isAdmin && (
+          <button 
+            onClick={() => setActiveView('cloud')}
+            className={`flex flex-col items-center justify-center gap-1 text-[10px] font-mono w-full h-full ${activeView === 'cloud' ? 'text-secondary-container' : 'text-outline'}`}
+          >
+            <Cloud size={18} />
+            雲端
+          </button>
+        )}
       </footer>
     </div>
   );

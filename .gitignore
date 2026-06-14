@@ -56,3 +56,12 @@ build/
 
 # Root-level GLB model library (not used by the app; only frontend/public/modle is)
 /modle/
+
+# Docker Deployment Package & SQL backups
+/postgres-init/*.sql
+/tuning-log-deploy/
+/tuning-log-deploy.zip
+/init.sql
+/docker-images/
+*.tar
+

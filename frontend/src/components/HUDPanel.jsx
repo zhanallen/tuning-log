@@ -44,15 +44,18 @@ export default function HUDPanel() {
   };
 
   return (
-    <div className="absolute right-4 top-4 z-40 w-80 max-h-[calc(100%-6rem)] rounded-lg border border-primary-container bg-background/95 backdrop-blur-xl p-5 shadow-[0_0_30px_rgba(255,92,0,0.25)] flex flex-col group overflow-hidden">
+    <div className="absolute bottom-0 left-0 right-0 w-full h-[55%] max-h-[55%] md:top-4 md:right-4 md:left-auto md:bottom-auto md:w-80 md:h-auto md:max-h-[calc(100%-6rem)] z-45 rounded-t-2xl md:rounded-lg border-t md:border border-primary-container bg-background/95 backdrop-blur-xl p-5 shadow-[0_-4px_30px_rgba(0,0,0,0.5)] md:shadow-[0_0_30px_rgba(255,92,0,0.25)] flex flex-col group overflow-hidden">
       
+      {/* Drag handle for mobile bottom sheet */}
+      <div className="md:hidden w-12 h-1 bg-outline-variant/40 rounded-full mx-auto mb-2 flex-shrink-0"></div>
+
       {/* Red top border glow */}
-      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary-container to-transparent"></div>
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary-container to-transparent hidden md:block"></div>
 
       {/* Close button */}
       <button 
         onClick={() => setActivePartKey(null)}
-        className="absolute top-3 right-3 text-on-surface-variant hover:text-primary-container transition-colors p-1 rounded hover:bg-surface-container"
+        className="absolute top-4 right-4 md:top-3 md:right-3 text-on-surface-variant hover:text-primary-container transition-colors p-1 rounded hover:bg-surface-container"
       >
         <X size={14} />
       </button>
