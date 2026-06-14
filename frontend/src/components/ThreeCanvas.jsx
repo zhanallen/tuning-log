@@ -333,7 +333,14 @@ function HotspotElement({ spot, isSelected, currentVal, config, isAero, setActiv
 // slow networks see clear progress instead of an empty/black canvas and assume
 // the page froze. Driven by drei's useProgress (THREE's DefaultLoadingManager),
 // which also re-fires whenever a different vehicle's model starts loading.
-function ModelLoadingOverlay({ vehicleName, active, progress }) {
+function ModelLoadingOverlay({ vehicleName, active, progress, isDownloading }) {
+  let statusText = "載入 3D 模型中…";
+  if (isDownloading) {
+    statusText = "正在下載 3D 模型數據…";
+  } else if (progress >= 99) {
+    statusText = "正在解析 3D 材質與場景…";
+  }
+
   return (
     <div
       className={`absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-[#1a1c1e] to-[#0c0e10] transition-opacity duration-500 ${
@@ -344,7 +351,7 @@ function ModelLoadingOverlay({ vehicleName, active, progress }) {
 
       <div className="flex flex-col items-center gap-2 w-48">
         <span className="font-display text-xs font-bold text-on-surface tracking-wide">
-          載入 3D 模型中…
+          {statusText}
         </span>
         {vehicleName && (
           <span className="font-mono text-[10px] text-outline truncate max-w-full">
@@ -423,7 +430,11 @@ export default function ThreeCanvas() {
   if (!currentVehicle) return null;
 
   const isActive = isDownloading || dreiActive;
-  const currentProgress = isDownloading ? downloadProgress : dreiProgress;
+  // If downloading is finished but Drei is still active (parsing/rendering),
+  // lock the progress bar at 99% to prevent it from sliding back to 0%.
+  const currentProgress = isDownloading 
+    ? downloadProgress 
+    : (dreiActive ? Math.max(99, dreiProgress) : 100);
 
   // Read scale multiplier directly from current vehicle
   const scaleMultiplier = currentVehicle.model_scale !== undefined ? currentVehicle.model_scale : 1.0;
@@ -510,7 +521,12 @@ export default function ThreeCanvas() {
         <CameraController activePartKey={activePartKey} />
       </Canvas>
 
-      <ModelLoadingOverlay vehicleName={currentVehicle.name} active={isActive} progress={currentProgress} />
+      <ModelLoadingOverlay 
+        vehicleName={currentVehicle.name} 
+        active={isActive} 
+        progress={currentProgress} 
+        isDownloading={isDownloading} 
+      />
     </div>
   );
 }
